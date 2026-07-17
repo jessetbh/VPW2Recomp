@@ -5,7 +5,7 @@
 # those platforms are tackled.
 #
 # Deltas vs the sisters' workflows:
-#  - No Mercy (same AKI/IDO binary shape as its predecessor WM2000) REQUIRES the
+#  - VPW2 (same AKI/IDO binary shape as its predecessor WM2000) REQUIRES the
 #    post-regen fixup pipeline after N64Recomp
 #    (fix_stumps/fix_switches/fix_backbranches/fix_selfentry/readd_hand_edits/
 #    audit_coresidency) — each guards a silent-miscompile class; see BUILDING.md §4.
@@ -15,9 +15,9 @@
 #    Restore it from WT's validate.yml when the patches pipeline is stood up.
 #
 # Required repository secrets:
-#   NOMERCY_CI_PAT   - fine-grained PAT (Contents: read-only) with access to the
+#   VPW2_CI_PAT   - fine-grained PAT (Contents: read-only) with access to the
 #                   private ROM repo.
-#   NOMERCY_ROM_REPO - "<owner>/<repo>" of the private repo holding nomercy.z64
+#   VPW2_ROM_REPO - "<owner>/<repo>" of the private repo holding vpw2.z64
 #                   at its root.
 name: validate
 on:
@@ -35,9 +35,9 @@ on:
         required: false
         default: 'ffb39cdad1da5de07eaaa48bd1db4a89a7986771'
     secrets:
-      NOMERCY_CI_PAT:
+      VPW2_CI_PAT:
         required: true
-      NOMERCY_ROM_REPO:
+      VPW2_ROM_REPO:
         required: true
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -58,7 +58,7 @@ jobs:
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ${{ runner.os }}-nomercy-ccache-${{ matrix.type }}
+          key: ${{ runner.os }}-vpw2-ccache-${{ matrix.type }}
       - name: Install Windows Dependencies
         run: |
           choco install ninja
@@ -68,11 +68,11 @@ jobs:
       - name: Get ROM
         uses: actions/checkout@v4
         with:
-          repository: ${{ secrets.NOMERCY_ROM_REPO }}
-          token: ${{ secrets.NOMERCY_CI_PAT }}
-          path: nomercy-secret
+          repository: ${{ secrets.VPW2_ROM_REPO }}
+          token: ${{ secrets.VPW2_CI_PAT }}
+          path: vpw2-secret
       - name: Prepare Build
-        run: copy .\nomercy-secret\nomercy.z64 .\
+        run: copy .\vpw2-secret\vpw2.z64 .\
       - name: Build N64Recomp & RSPRecomp
         run: |
           git clone https://github.com/N64Recomp/N64Recomp.git --recurse-submodules N64RecompSource
@@ -89,9 +89,9 @@ jobs:
           cp cmake-build/RSPRecomp.exe ..
       - name: Run N64Recomp & RSPRecomp
         run: |
-          ./N64Recomp.exe nomercy.toml
+          ./N64Recomp.exe vpw2.toml
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          ./RSPRecomp.exe rsp/nomercy_audio.toml
+          ./RSPRecomp.exe rsp/vpw2_audio.toml
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Post-regen fixup pipeline (mandatory — see BUILDING.md §4)
         run: |
@@ -107,7 +107,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python tools/audit_coresidency.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Build NoMercyRecompiled
+      - name: Build Vpw2Recompiled
         run: |
           $cpuCores = (Get-CimInstance -ClassName Win32_Processor).NumberOfLogicalProcessors
 
@@ -115,11 +115,11 @@ jobs:
           $env:PATH = ($env:PATH -split ';' | Where-Object { $_ -ne 'C:\Program Files\LLVM\bin' }) -join ';'
 
           cmake -DCMAKE_BUILD_TYPE=${{ matrix.type }} -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER=clang-cl -DCMAKE_MAKE_PROGRAM=ninja -G Ninja -S . -B cmake-build
-          cmake --build cmake-build --config ${{ matrix.type }} --target NoMercyRecompiled -j $cpuCores
+          cmake --build cmake-build --config ${{ matrix.type }} --target Vpw2Recompiled -j $cpuCores
       - name: Package
         run: |
           New-Item -ItemType Directory -Path package > $null
-          Copy-Item cmake-build/NoMercyRecompiled.exe package/
+          Copy-Item cmake-build/Vpw2Recompiled.exe package/
           Copy-Item -Recurse cmake-build/assets package/assets
           Copy-Item cmake-build/recompcontrollerdb.txt package/
           Copy-Item cmake-build/SDL2.dll, cmake-build/dxil.dll, cmake-build/dxcompiler.dll package/
@@ -139,16 +139,16 @@ jobs:
           $stray += Get-ChildItem -Recurse -Directory package -Filter saves
           if ($stray) { $stray | ForEach-Object { Write-Host "STRAY: $($_.FullName)" }; exit 1 }
           Write-Host "package is clean"
-      - name: Archive NoMercyRecompiled
+      - name: Archive Vpw2Recompiled
         uses: actions/upload-artifact@v4
         with:
-          name: NoMercyRecompiled-${{ runner.os }}-${{ matrix.type }}
+          name: Vpw2Recompiled-${{ runner.os }}-${{ matrix.type }}
           path: package/*
       - name: Archive Debug Files
         uses: actions/upload-artifact@v4
         with:
-          name: NoMercyRecompiled-DebugSyms-${{ matrix.type }}
+          name: Vpw2Recompiled-DebugSyms-${{ matrix.type }}
           path: |
-            cmake-build/NoMercyRecompiled.map
-            cmake-build/NoMercyRecompiled.pdb
+            cmake-build/Vpw2Recompiled.map
+            cmake-build/Vpw2Recompiled.pdb
           if-no-files-found: warn

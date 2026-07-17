@@ -21,5 +21,5 @@ jobs:
     needs: authorize
     uses: ./.github/workflows/validate.yml
     secrets:
-      NOMERCY_CI_PAT: ${{ secrets.NOMERCY_CI_PAT }}
-      NOMERCY_ROM_REPO: ${{ secrets.NOMERCY_ROM_REPO }}
+      VPW2_CI_PAT: ${{ secrets.VPW2_CI_PAT }}
+      VPW2_ROM_REPO: ${{ secrets.VPW2_ROM_REPO }}

@@ -1,4 +1,4 @@
-# Tag push (v*) -> full CI build -> NoMercyRecompiled-<tag>-Windows.zip + SHA256SUMS
+# Tag push (v*) -> full CI build -> Vpw2Recompiled-<tag>-Windows.zip + SHA256SUMS
 # attached to a DRAFT GitHub release. Fill in the changelog section of the notes
 # (template: .github/RELEASE_NOTES_TEMPLATE.md) and publish manually.
 name: release
@@ -21,15 +21,15 @@ jobs:
       - name: Download Windows build
         uses: actions/download-artifact@v4
         with:
-          name: NoMercyRecompiled-Windows-Release
+          name: Vpw2Recompiled-Windows-Release
           path: package
       - name: Assemble release assets
         run: |
           TAG='${{ github.ref_name }}'
           cd package
-          zip -r "../NoMercyRecompiled-$TAG-Windows.zip" .
+          zip -r "../Vpw2Recompiled-$TAG-Windows.zip" .
           cd ..
-          sha256sum "NoMercyRecompiled-$TAG-Windows.zip" > SHA256SUMS
+          sha256sum "Vpw2Recompiled-$TAG-Windows.zip" > SHA256SUMS
           cat SHA256SUMS
       - name: Create draft release
         env:
@@ -38,17 +38,17 @@ jobs:
           TAG='${{ github.ref_name }}'
           gh release create "$TAG" \
             --draft \
-            --title "WWF No Mercy: Recompiled $TAG" \
+            --title "Virtual Pro Wrestling 2: Recompiled $TAG" \
             --notes-file .github/RELEASE_NOTES_TEMPLATE.md \
-            "NoMercyRecompiled-$TAG-Windows.zip" \
+            "Vpw2Recompiled-$TAG-Windows.zip" \
             SHA256SUMS
       - name: Archive debug symbols with the run
         uses: actions/download-artifact@v4
         with:
-          name: NoMercyRecompiled-DebugSyms-Release
+          name: Vpw2Recompiled-DebugSyms-Release
           path: debug-syms
       - name: Upload debug symbols artifact
         uses: actions/upload-artifact@v4
         with:
-          name: NoMercyRecompiled-${{ github.ref_name }}-DebugSyms
+          name: Vpw2Recompiled-${{ github.ref_name }}-DebugSyms
           path: debug-syms

@@ -5,17 +5,17 @@
 
 ## Notes
 
-- **No game assets are included.** You must supply your own WWF No Mercy
-  (USA, Rev 1) ROM — SHA1 `91CEE3D096F4A76644D8B35B9AEAD6448909ABD1`. On first
+- **No game assets are included.** You must supply your own Virtual Pro Wrestling 2
+  (Japan) ROM — SHA1 `82DD25A044689EAB57AB362FE10C0DA6388C217A`. On first
   launch, click **Load ROM** and select it; the launcher validates and remembers
-  it. The original USA release (Rev 0) and other regions are not accepted.
+  it. VPW2 was Japan-only; fan-translation patched ROMs are not accepted (their hashes differ).
 - **Windows SmartScreen**: the exe is unsigned, so Windows may warn on first run.
   Click "More info" → "Run anyway".
-- **Saves and settings** live in `%LOCALAPPDATA%\NoMercyRecompiled\` — the cart's
-  flash save (progress, unlocks, created wrestlers) persists automatically. Save data is
+- **Saves and settings** live in `%LOCALAPPDATA%\Vpw2Recompiled\` — the cart's
+  cartridge save (progress, created wrestlers) persists automatically. Save data is
   compatible across releases unless a release note says otherwise. For a portable
   install, create an empty `portable.txt` next to the exe.
 - **GPU**: D3D12 by default. If you hit rendering issues, update your GPU drivers
-  first, and please attach `%LOCALAPPDATA%\NoMercyRecompiled\NoMercyRecompiled.log`
+  first, and please attach `%LOCALAPPDATA%\Vpw2Recompiled\Vpw2Recompiled.log`
   to any bug report.
 - Known issues are tracked in the README.
