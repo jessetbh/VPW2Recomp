@@ -1,0 +1,2 @@
+// TODO(recon): seeded during VPW2 recon (splat symbol addresses).
+// See ../NoMercyRecomp/disasm/symbol_addrs.txt for the worked predecessor.

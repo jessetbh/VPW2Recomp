@@ -1,0 +1,24 @@
+# RSPRecomp config for VPW2's AUDIO microcode — BOOTSTRAP PREDICTION, VERIFY IN
+# RECON. Revenge, WM2000, and No Mercy all share ONE byte-identical newer-AKI audio
+# ucode revision (0xC54 text; No Mercy at rom 0x41050, WM2000 at 0x39510, Revenge at
+# 0x2C910 — the rom offset MOVES per game, the text is identical). VPW2 (Jan 2000,
+# between WM2000 and No Mercy) almost certainly ships the same revision.
+# TODO(recon): find this ROM's ucode text offset (nm_recon.py method: locate rspboot
+# after the fixed segment, audio text follows; confirm byte-identity + dispatch
+# table). If identical, text_size/text_address/branch targets below transfer
+# VERBATIM, including the 12-bit-PC jump-table gotcha (entry 14 stored 0x02B0 =
+# recompiler 0x12B0; see Revenge's rsp/README.md). If NOT identical, re-derive the
+# dispatch table before trusting any of it.
+# text_address 0x04001080 = where rspboot places task ucode in IMEM.
+# Run from repo root:  .\RSPRecomp.exe rsppw2_audio.toml  (paths relative to rsp/).
+text_offset = 0x41050   # TODO(recon): No Mercy's offset — replace with this ROM's
+text_size = 0xC54
+text_address = 0x04001080
+rom_file_path = "../vpw2.z64"
+output_file_path = "vpw2_audio.cpp"
+output_function_name = "vpw2_audio_ucode"
+
+extra_indirect_branch_targets = [
+	0x10EC, 0x139C, 0x119C, 0x1A64, 0x11C8, 0x17EC, 0x1208,
+	0x127C, 0x1348, 0x1248, 0x1C84, 0x12D4, 0x12B0, 0x1384
+]

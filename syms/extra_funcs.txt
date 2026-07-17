@@ -1,0 +1,3 @@
+# Extra function entry points (mid-function entries for shared tails, backbranch
+# targets, coresidency mid-entries). One vram per line. TODO(recon): filled by
+# the recomp loop + fix_backbranches + the coresidency sweep.

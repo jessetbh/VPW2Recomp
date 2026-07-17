@@ -1,0 +1,23 @@
+1 ICON "app.ico"
+
+1 VERSIONINFO
+FILEVERSION     0,1,0,0
+PRODUCTVERSION  0,1,0,0
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "FileDescription", "Virtual Pro Wrestling 2: Recompiled"
+            VALUE "FileVersion", "0.1.0"
+            VALUE "InternalName", "Vpw2Recompiled"
+            VALUE "OriginalFilename", "Vpw2Recompiled.exe"
+            VALUE "ProductName", "Virtual Pro Wrestling 2: Recompiled"
+            VALUE "ProductVersion", "0.1.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

@@ -1,0 +1,99 @@
+# splat config for Virtual Pro Wrestling 2 - Oudou Keishou (Japan, NA2J) — BOOTSTRAP
+# PLACEHOLDER: every TODO(recon) below must be filled from this ROM before the first
+# split. Method: tools/nm_recon*.py in this repo are No Mercy's recon scripts kept
+# VERBATIM as references (they point at Wm2kRecomp + No Mercy data); write adapted
+# vpw2_recon*.py with local=vpw2.z64, sister=../NoMercyRecomp. Expected findings
+# (No Mercy/WM2000 precedent — VERIFY each):
+#   - entry stub rom 0x1000 -> game_main in the 0x8000045x-0x8000046x range
+#   - fixed-segment code end (last jr $ra), then rspboot text, then audio ucode
+#     text (likely byte-identical to Revenge/WM2000/No Mercy's newer-AKI revision;
+#     find the dispatch table to confirm — see rsp/vpw2_audio.toml)
+#   - gfx ucode after audio text: expect REVISION DRIFT vs the sisters (No Mercy's
+#     was 199/256 blocks vs WM2000) — RT64's GBI database must recognize it at boot
+#   - overlay descriptor table in fixed-segment data (9-word entries, zero-
+#     terminated): WM2000 had FOUR overlays/TWO slots, No Mercy FIVE/TWO. Expect
+#     that architecture; take byte-exact bounds from the descriptors.
+name: Virtual Pro Wrestling 2 - Oudou Keishou (Japan)
+sha1: 82dd25a044689eab57ab362fe10c0da6388c217a
+options:
+  basename: vpw2
+  target_path: vpw2.z64
+  elf_path: build/vpw2.elf
+  base_path: .
+  platform: n64
+  compiler: IDO
+
+  asm_path: asm
+  data_path: asm/data
+  ld_script_path: vpw2.ld
+  ld_dependencies: True
+
+  find_file_boundaries: True
+  header_encoding: ASCII
+
+  o_as_suffix: True
+  use_legacy_include_asm: False
+  mips_abi_float_regs: o32
+
+  symbol_addrs_path:
+    - symbol_addrs.txt
+  reloc_addrs_path:
+    - reloc_addrs.txt
+
+  undefined_funcs_auto_path: undefined_funcs_auto.txt
+  undefined_syms_auto_path: undefined_syms_auto.txt
+
+  libultra_symbols: True
+  hardware_regs: True
+
+  rodata_string_guesser_level: 2
+  data_string_guesser_level: 2
+
+segments:
+  - name: header
+    type: header
+    start: 0x0
+
+  - name: ipl3
+    type: bin
+    start: 0x40
+
+  - name: entry
+    type: code
+    start: 0x1000
+    vram: 0x80000400
+    subsegments:
+      - [0x1000, hasm]
+
+  # TODO(recon): fixed segment. Start/vram below follow the AKI standard the whole
+  # family shares (entry stub ends ~0x1050); the DATA BOUNDARY (end of executable
+  # text, start of rsp/asset data) MUST be derived from this ROM (jr-$ra density
+  # scan + last-jr — nm_recon.py method) before splitting. Splitting with a wrong
+  # boundary recompiles data as code (safe) or code as data (STACK-LEAK DISASTER —
+  # WM2000's 0x3A1D8 lesson: cold-path fragments mapped as data recompile EMPTY).
+  - name: main
+    type: code
+    start: 0x1050
+    vram: 0x80000450
+    follows_vram: entry
+    subsegments:
+      - [0x1050, asm]
+      - [0x40000, data]   # TODO(recon): REPLACE 0x40000 with the real code-end rom offset
+
+  # TODO(recon): overlay segments. Template from No Mercy (adjust names/bounds/slots
+  # to this ROM's descriptor table; one section per overlay, exclusive_ram_id per
+  # vram swap slot, bss_size from the descriptors):
+  #
+  # - name: ovl_a
+  #   type: code
+  #   start: 0xTODO
+  #   vram: 0xTODO
+  #   exclusive_ram_id: ovl_slot1
+  #   bss_size: 0xTODO
+  #   subsegments:
+  #     - [0xTODO, asm]
+
+  # TODO(recon): trailing asset data as bin from the last overlay's end.
+  - name: assets
+    type: bin
+    start: 0x40000    # TODO(recon): REPLACE with the real boundary (same as main's data start)
