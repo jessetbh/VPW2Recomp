@@ -18,14 +18,23 @@ are this one's closest references.
 
 ### **This repository and its releases do not contain game assets. The original game is required to build or run this project.**
 
-> **Status: pre-alpha bring-up.** The project skeleton, toolchain, and runtime stack
-> are in place; ROM reconnaissance and first boot have not started. Nothing is
-> playable yet — this README describes the target the five sister projects have
-> already reached.
+> **Status: beta.** The game boots, renders at high resolution, plays music and
+> sound effects at full quality, takes keyboard and gamepad input (two controllers
+> verified) through the menus and full matches with clean post-match transitions,
+> and cartridge SRAM saves persist automatically. See
+> [Known Issues](#known-issues) for what's still rough.
+
+<div align="center">
+  <img src="docs/screenshots/gameplay.png" width="640" alt="In-ring gameplay rendered at high resolution">
+  <br>
+  <img src="docs/screenshots/title.png" width="318" alt="Title screen">
+  <img src="docs/screenshots/menu.png" width="318" alt="Main menu">
+</div>
 
 ## Table of Contents
 * [System Requirements](#system-requirements)
-* [Planned Features](#planned-features)
+* [Features](#features)
+* [Known Issues](#known-issues)
 * [FAQ](#faq)
 * [Building](#building)
 * [Libraries Used and Projects Referenced](#libraries-used-and-projects-referenced)
@@ -40,9 +49,9 @@ A GPU supporting Direct3D 12.0 (Shader Model 6) or Vulkan 1.2 is required. A CPU
 supporting the SSE4.1 instruction set is also required (Intel Core 2 Penryn series or
 AMD Bulldozer and newer).
 
-## Planned Features
+## Features
 
-Everything the sister projects ship today:
+Live today, matching the sister projects:
 
 * Plug and play — assets load directly from your ROM, no extraction step
 * Hardware-accelerated high-resolution rendering through RT64 with the original
@@ -50,11 +59,23 @@ Everything the sister projects ship today:
 * Widescreen support
 * In-game config menus with full input rebinding for keyboard and controller
 * Default mappings tailored to the AKI control scheme (d-pad movement, analog taunts)
-* Cartridge save emulation with automatic persistence, plus rumble
+* Multiplayer with multiple controllers
+* Cartridge SRAM save emulation with automatic persistence
+
+Planned:
+
 * High framerate support (frame interpolation) later, pending the family's
   matrix-group work
 * Linux support
-* Mod support
+* Mod support — the natural home for the community English translation
+
+## Known Issues
+
+* Rumble and Controller Pak behavior have not been through a full verification
+  pass yet.
+* Continuous integration is still being wired up for this repository.
+* The port runs the original Japanese game; there is no built-in translation
+  (see the FAQ).
 
 ## FAQ
 
@@ -95,10 +116,10 @@ planned mod support is the natural home for it eventually.
 
 - Windows: `%LOCALAPPDATA%\Vpw2Recompiled\saves\`
 
-VPW2 saves to the cartridge's battery-backed SRAM (and, as an AKI title of this
-era, likely also supports the Controller Pak — verified during bring-up); the port
-persists those images to disk automatically. Configuration files and the log file
-live one level up in the same app folder.
+VPW2 saves to the cartridge's battery-backed SRAM (256 Kbit, confirmed during
+bring-up — the ROM contains no flash driver); the port persists the save image to
+disk automatically. Configuration files and the log file live one level up in the
+same app folder.
 
 #### Can you run this project as a portable application?
 

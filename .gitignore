@@ -84,3 +84,6 @@ boot*_stacks*.txt
 boot-screenshot.png
 shot-*.png
 tools/*.exe
+
+# raw bring-up captures (curated copies are committed as gameplay/title/menu.png)
+docs/screenshots/boot*.png
