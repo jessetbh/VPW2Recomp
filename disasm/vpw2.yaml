@@ -1,18 +1,23 @@
-# splat config for Virtual Pro Wrestling 2 - Oudou Keishou (Japan, NA2J) — BOOTSTRAP
-# PLACEHOLDER: every TODO(recon) below must be filled from this ROM before the first
-# split. Method: tools/nm_recon*.py in this repo are No Mercy's recon scripts kept
-# VERBATIM as references (they point at Wm2kRecomp + No Mercy data); write adapted
-# vpw2_recon*.py with local=vpw2.z64, sister=../NoMercyRecomp. Expected findings
-# (No Mercy/WM2000 precedent — VERIFY each):
-#   - entry stub rom 0x1000 -> game_main in the 0x8000045x-0x8000046x range
-#   - fixed-segment code end (last jr $ra), then rspboot text, then audio ucode
-#     text (likely byte-identical to Revenge/WM2000/No Mercy's newer-AKI revision;
-#     find the dispatch table to confirm — see rsp/vpw2_audio.toml)
-#   - gfx ucode after audio text: expect REVISION DRIFT vs the sisters (No Mercy's
-#     was 199/256 blocks vs WM2000) — RT64's GBI database must recognize it at boot
-#   - overlay descriptor table in fixed-segment data (9-word entries, zero-
-#     terminated): WM2000 had FOUR overlays/TWO slots, No Mercy FIVE/TWO. Expect
-#     that architecture; take byte-exact bounds from the descriptors.
+# splat config for Virtual Pro Wrestling 2 - Oudou Keishou (Japan, NA2J) —
+# recon 2026-07-17 (tools/vpw2_recon*.py):
+#   - entry stub (rom 0x1000): clears bss 0x8004B2A0 +0x6B050 (to 0x800B62F0),
+#     sp 0x8009C190, jumps to game_main 0x80000460 (= rom 0x1060, SAME VRAM AS
+#     WM2000 AND NO MERCY)
+#   - fixed-segment code ends 0x3A214 (last jr $ra 0x3A20C); rspboot text begins
+#     0x3A220; audio ucode text at 0x3A2F0 +0xC54 — BYTE-IDENTICAL to Revenge/
+#     WM2000/No Mercy's newer-AKI revision (dispatch table at 0x4A730, bit-identical)
+#     — see rsp/vpw2_audio.toml. Gfx ucode follows at 0x3AF44 — byte-identical to
+#     NO MERCY'S for at least 0x2553 bytes (identity run from rspboot 0x3277 bytes;
+#     first 4KB of gfx text 256/256 blocks) — NM's gfx boots on RT64's GBI database,
+#     so this one should too.
+#   - overlay descriptor table at rom 0x488C0 (four 9-word entries, terminated at
+#     0x48950): FOUR overlays across TWO vram swap slots — WM2000's architecture.
+#     Bounds below are byte-exact from the descriptors; all rom-size/vram-span
+#     arithmetic cross-checks exactly.
+#     Slot 0x800E6AF0: ovl_a + ovl_d; slot 0x80119450: ovl_b/ovl_c.
+#     ovl_a's bss ends exactly at 0x80119450 (a+{b,c} coexist, WM2000's scheme);
+#     ovl_d is the big standalone image spanning both slots (WM2000's ovl_d /
+#     NM's ovl_e analog).
 name: Virtual Pro Wrestling 2 - Oudou Keishou (Japan)
 sha1: 82dd25a044689eab57ab362fe10c0da6388c217a
 options:
@@ -29,7 +34,8 @@ options:
   ld_dependencies: True
 
   find_file_boundaries: True
-  header_encoding: ASCII
+  # half-width katakana internal name (VPW64 precedent, the other JP title)
+  header_encoding: shift_jis
 
   o_as_suffix: True
   use_legacy_include_asm: False
@@ -65,12 +71,6 @@ segments:
     subsegments:
       - [0x1000, hasm]
 
-  # TODO(recon): fixed segment. Start/vram below follow the AKI standard the whole
-  # family shares (entry stub ends ~0x1050); the DATA BOUNDARY (end of executable
-  # text, start of rsp/asset data) MUST be derived from this ROM (jr-$ra density
-  # scan + last-jr — nm_recon.py method) before splitting. Splitting with a wrong
-  # boundary recompiles data as code (safe) or code as data (STACK-LEAK DISASTER —
-  # WM2000's 0x3A1D8 lesson: cold-path fragments mapped as data recompile EMPTY).
   - name: main
     type: code
     start: 0x1050
@@ -78,22 +78,62 @@ segments:
     follows_vram: entry
     subsegments:
       - [0x1050, asm]
-      - [0x40000, data]   # TODO(recon): REPLACE 0x40000 with the real code-end rom offset
+      # 0x38000-0x38400 and 0x38800-0x38C00 are low-instruction-validity windows
+      # (vpw2_recon2) — kept as asm ON PURPOSE: junk data decoding as never-executed
+      # functions is safe, but real IDO cold-path fragments mapped as data recompile
+      # EMPTY and leak stack (WM2000's 0x3A1D8 disaster). Revisit only with evidence.
+      - [0x3A220, data]
 
-  # TODO(recon): overlay segments. Template from No Mercy (adjust names/bounds/slots
-  # to this ROM's descriptor table; one section per overlay, exclusive_ram_id per
-  # vram swap slot, bss_size from the descriptors):
-  #
-  # - name: ovl_a
-  #   type: code
-  #   start: 0xTODO
-  #   vram: 0xTODO
-  #   exclusive_ram_id: ovl_slot1
-  #   bss_size: 0xTODO
-  #   subsegments:
-  #     - [0xTODO, asm]
+  # Swap slot 0x800E6AF0: ovl_a and ovl_d (ovl_d also overlaps slot 0x80119450 —
+  # it is the big standalone image, WM2000's ovl_d / No Mercy's ovl_e analog).
+  - name: ovl_a
+    type: code
+    start: 0x4BF40
+    vram: 0x800E6AF0
+    exclusive_ram_id: ovl_e6af0
+    bss_size: 0xCE10
+    subsegments:
+      - [0x4BF40, asm]
+      - [0x695E0, data]
+      - { type: bss, vram: 0x8010C640 }
 
-  # TODO(recon): trailing asset data as bin from the last overlay's end.
+  # Swap slot 0x80119450: ovl_b, ovl_c; each can sit alongside ovl_a
+  # (ovl_a's bss ends exactly at 0x80119450).
+  - name: ovl_b
+    type: code
+    start: 0x71A90
+    vram: 0x80119450
+    exclusive_ram_id: ovl_119450
+    bss_size: 0x860
+    subsegments:
+      - [0x71A90, asm]
+      - [0x7C710, data]
+      - { type: bss, vram: 0x8012C0D0 }
+
+  - name: ovl_c
+    type: code
+    start: 0x84710
+    vram: 0x80119450
+    exclusive_ram_id: ovl_119450
+    bss_size: 0x3260
+    subsegments:
+      - [0x84710, asm]
+      - [0xD5840, data]
+      - { type: bss, vram: 0x80175EE0 }
+
+  - name: ovl_d
+    type: code
+    start: 0xE11A0
+    vram: 0x800E6AF0
+    exclusive_ram_id: ovl_e6af0
+    bss_size: 0x1D430
+    subsegments:
+      - [0xE11A0, asm]
+      - [0x14BCA0, data]
+      - { type: bss, vram: 0x80158740 }
+
   - name: assets
     type: bin
-    start: 0x40000    # TODO(recon): REPLACE with the real boundary (same as main's data start)
+    start: 0x152DF0
+
+  - [0x2000000]  # ROM size confirmed: 32 MB exactly (same as WM2000/No Mercy)

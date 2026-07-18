@@ -10,13 +10,14 @@ service ran OVL_B code on ovl_c data).
 Run after any re-split or symbol change, BEFORE regenerating; a finding means
 "add a mid-entry to syms/extra_funcs.txt for the listed overlay(s)".
 
-Co-residency model: TODO(recon) — the model below is NO MERCY'S (5 overlays,
-2 slots), kept as the working template. Rewrite it from THIS ROM's overlay
-descriptor table once found (both the docstring and the LEGAL-pairs code below):
+Co-residency model (VPW2 descriptor table at rom 0x488C0, vpw2_recon2.py
+2026-07-17 — FOUR overlays, TWO slots, WM2000's architecture):
   - main segments co-load with everything
-  - (NM) slot 0x800D9960 held ovl_a; slot 0x80106760 held ovl_b/ovl_c/ovl_d
-  - (NM) ovl_a <-> {ovl_b, ovl_c, ovl_d} legal pairs; ovl_e spanned BOTH slots
-    (never co-resident); same-slot overlays never co-resident with each other
+  - slot 0x800E6AF0 holds ovl_a; slot 0x80119450 holds ovl_b/ovl_c
+  - ovl_a's bss ends exactly at 0x80119450, so ovl_a <-> {ovl_b, ovl_c} are the
+    legal pairs; ovl_d spans BOTH slots (text 0x800E6AF0..0x801515F0, past the
+    second slot's base — never co-resident with any other overlay); same-slot
+    overlays never co-resident with each other
   - no pocket/island aliases discovered yet (Wm2k's main_D0C2C/main_70EF8
     precedent — add to ALIAS if the bring-up finds any)
 """
@@ -33,8 +34,7 @@ for m in re.finditer(r'\[\[section\]\]\nname = "(\w+)"\nrom = 0x[0-9A-Fa-f]+\n'
 
 # effective overlay identity for co-residency purposes
 ALIAS = {}
-# TODO(recon): No Mercy's overlay set/pairs — rewrite for this ROM's descriptors.
-OVERLAYS = {'ovl_a', 'ovl_b', 'ovl_c', 'ovl_d', 'ovl_e'}
+OVERLAYS = {'ovl_a', 'ovl_b', 'ovl_c', 'ovl_d'}
 
 def ident(sec):
     return ALIAS.get(sec, sec)
@@ -48,8 +48,7 @@ def coloadable(a, b):
         return True  # main segments co-load with everything
     pair = frozenset((a, b))
     return pair in (frozenset(('ovl_a', 'ovl_b')),
-                    frozenset(('ovl_a', 'ovl_c')),
-                    frozenset(('ovl_a', 'ovl_d')))
+                    frozenset(('ovl_a', 'ovl_c')))
 
 # function name -> section; (section, vram) -> True
 sec_positions = [(m.start(), m.group(1)) for m in re.finditer(r'^name = "(\w+)"', dump, re.M)]

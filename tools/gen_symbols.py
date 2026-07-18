@@ -31,12 +31,78 @@ ASM = ROOT / "disasm" / "asm"
 OUT = ROOT / "syms" / "dump.toml"
 
 RENAME = {
-    # TODO(recon): libultra names transfer from No Mercy (Nov 2000, closest build;
-    # 43 names, family-record 36/42 unique fingerprint transfer) and WM2000.
-    # Adapt tools/nm_recon*.py (kept verbatim as method references) into
-    # vpw2_recon*.py pointing local=vpw2.z64, sister=../NoMercyRecomp.
-    # EVERY entry needs an evidence line in disasm/libultra.md.
-    # Boot invariants (all five sisters): rename ONLY osContInit +
+    # host-collision rename, same as every sister (splat leaves the entry target
+    # unnamed; the entry stub at rom 0x1000 jr's to it at 0x80000460 — SAME vram
+    # as WM2000 and No Mercy; confirmed by entry-stub decode, vpw2_recon.py
+    # 2026-07-17):
+    "main": "game_main",
+    "func_80000460": "game_main",
+
+    # --- No Mercy fingerprint transfer, 2026-07-17 (vpw2_recon2.py): masked
+    #     full-body match of No Mercy's named fixed-segment set, 36/51 unique
+    #     (all 9 osFlash* correctly no-match — VPW2 is SRAM; effective 36/42).
+    #     Evidence per function: WT's disasm/libultra.md method; this game's
+    #     notes in ours. Naming a function makes N64Recomp auto-ignore it
+    #     (built-in set in N64Recomp symbol_lists) so the runtime provides it.
+    "func_80023310": "osDriveRomInit",
+    "func_8002B020": "__osDisableInt",
+    "func_8002B090": "__osRestoreInt",
+    "func_8002B0B0": "osSetIntMask",
+    "func_8002B150": "osCreatePiManager",
+    "func_8002B4D0": "osEPiStartDma",
+    "func_8002B5C0": "osCartRomInit",
+    "func_8002C670": "osAiSetFrequency",
+    "func_8002C790": "osAiSetNextBuffer",
+    "func_800306B0": "osContInit",
+    "func_80030A20": "osVirtualToPhysical",
+    "func_80032610": "osCreateMesgQueue",
+    "func_80032640": "osJamMesg",
+    "func_80032780": "osRecvMesg",
+    "func_800328B0": "osSendMesg",
+    "func_800329E0": "osSetEventMesg",
+    "func_80032A90": "osSpTaskLoad",
+    "func_80032C9C": "osSpTaskStartGo",
+    "func_80032CD0": "osSpTaskYield",
+    "func_80032CF0": "osSpTaskYielded",
+    "func_80032D40": "__osSiRawStartDma",
+    "func_80032FD0": "osCreateThread",
+    "func_800330A0": "osGetThreadPri",
+    "func_800330C0": "osSetThreadPri",
+    "func_80033190": "osStartThread",
+    "func_80033340": "osGetTime",
+    "func_80033960": "osCreateViManager",
+    "func_80033CA0": "osViSetEvent",
+    "func_80033D00": "osViSetMode",
+    "func_80033D50": "osViSetSpecialFeatures",
+    "func_80033EC0": "osViSetYScale",
+    "func_80033F10": "osViSwapBuffer",
+    "func_80034270": "osViBlack",
+    "func_80037278": "osInitialize",
+    "func_80038670": "osDestroyThread",
+
+    # --- ambiguity resolutions, vpw2_recon3.py (sisters' evidence patterns —
+    #     the SAME three ambiguity groups No Mercy had):
+    # AI getter pair: adjacent tiny leaves; Length reads AI_LEN 0xA4500004,
+    # Status reads AI_STATUS 0xA450000C (third candidate read SP_STATUS):
+    "func_8002C650": "osAiGetLength",
+    "func_8002C660": "osAiGetStatus",
+    # Vi getter pair: adjacent 0x40-apart, WT's source order (Current first) —
+    # 0x800338E0 loads global +0x9A30, 0x80033920 loads +0x9A34; both bracket
+    # the load with jal __osDisableInt/__osRestoreInt at the transferred
+    # addresses (cross-consistency check passed):
+    "func_800338E0": "osViGetCurrentFramebuffer",
+    "func_80033920": "osViGetNextFramebuffer",
+    # __osSiDeviceBusy: of 2 shape-matches, the lui 0xA480 / lw 0x18 / andi 3
+    # one = SI_STATUS (other candidate read SP_STATUS 0xA4040010 andi 0x1C):
+    "func_80039040": "__osSiDeviceBusy",
+    # osGetCount: too small to fingerprint; UNIQUE mfc0 $v0,$Count (0x40024800)
+    # byte-signature hit in the whole fixed segment (rom 0x39070).
+    # NEVER stub (WM2000 lesson).
+    "func_80038470": "osGetCount",
+
+    # NO osFlash* renames: all nine No Mercy flash entry points no-match in this
+    # ROM (vpw2_recon2.py) — SRAM save confirmed, SaveType::Sram in main.cpp
+    # stands. Boot invariants (all five sisters): rename ONLY osContInit +
     # __osSiRawStartDma + __osSiDeviceBusy for input (NOT osContStartReadData);
     # NEVER stub or fake osGetCount.
 }
@@ -71,17 +137,17 @@ FUNC_RE = re.compile(r"^nonmatching (\S+), (0x[0-9A-Fa-f]+)")
 GLABEL_RE = re.compile(r"^glabel (\S+)")
 INSN_RE = re.compile(r"^\s*/\* ([0-9A-Fa-f]+) ([0-9A-Fa-f]{8}) ([0-9A-Fa-f]{8}) \*/")
 
-# Overlays per the descriptor table at rom 0x539A0 (disasm/vpw2.yaml): five
-# overlays across two vram slots (0x800D9960: a+e; 0x80106760: b/c/d).
+# Overlays per the descriptor table at rom 0x488C0 (disasm/vpw2.yaml): FOUR
+# overlays across two vram slots (0x800E6AF0: a+d; 0x80119450: b/c).
 # N64Recomp statics are `static_<section index>_<vram>` with the index = the
 # section ORDER in dump.toml — keep fix_stumps' index-based resolution in mind
 # (WM2000 session 7) when reading its "chained X -> Y" output.
 SECTION_NAMES = {
-    # TODO(recon): map splat asm filenames (rom-offset .s names) to section names
-    # once the overlay descriptor table is found. No Mercy had FIVE overlays across
-    # TWO swap slots (descriptors rom 0x539A0, 9-word entries); WM2000 had four.
-    # Expect VPW2 (between them, Jan 2000) to follow the same architecture.
     "1000.s": "entry",
+    "4BF40.s": "ovl_a",
+    "71A90.s": "ovl_b",
+    "84710.s": "ovl_c",
+    "E11A0.s": "ovl_d",
 }
 
 def parse_file(path):
