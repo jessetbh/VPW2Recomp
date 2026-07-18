@@ -11,7 +11,7 @@ final N64-era project in the AKI wrestling recompilation family, after
 [WCW/nWo Revenge: Recompiled](https://github.com/jessetbh/WCWnWoRevengeRecomp),
 [WWF WrestleMania 2000: Recompiled](https://github.com/jessetbh/WWFWrestleMania2000Recomp),
 [Virtual Pro Wrestling 64: Recompiled](https://github.com/jessetbh/VPW64Recomp),
-and WWF No Mercy: Recompiled,
+and [WWF No Mercy: Recompiled](https://github.com/jessetbh/WWFNoMercyRecomp),
 sharing their runtime stack and conventions. VPW2 is VPW64's sequel and sits
 between WrestleMania 2000 and No Mercy on the same engine, so those two projects
 are this one's closest references.
@@ -162,7 +162,7 @@ See [BUILDING.md](BUILDING.md).
   [WCW/nWo Revenge: Recompiled](https://github.com/jessetbh/WCWnWoRevengeRecomp),
   [WWF WrestleMania 2000: Recompiled](https://github.com/jessetbh/WWFWrestleMania2000Recomp),
   [Virtual Pro Wrestling 64: Recompiled](https://github.com/jessetbh/VPW64Recomp),
-  WWF No Mercy: Recompiled,
+  [WWF No Mercy: Recompiled](https://github.com/jessetbh/WWFNoMercyRecomp),
   [Bomberman Hero: Recompiled](https://github.com/RevoSucks/BMHeroRecomp), and
   [Zelda64Recomp](https://github.com/Zelda64Recomp/Zelda64Recomp) as reference
   projects for structure and conventions
