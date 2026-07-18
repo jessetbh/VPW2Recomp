@@ -20,9 +20,32 @@ trace_mode = false
 # do NOT put comments inside it). Classify each against No Mercy's verified 17-stub
 # table (its bringup notes; every one reverse-fingerprinted onto WM2000's verified
 # set). The standing lesson: NEVER stub osGetCount — it freezes the game clock.
-stubbed_funcs = [
+stubs = [
+    "func_80030250",
+    "func_80030300",
+    "func_80030380",
+    "func_80030400",
+    "func_80033820",
+    "func_80037560",
+    "func_80037AA4",
+    "func_80037ABC",
+    "func_80037BDC",
+    "func_80037D44",
+    "func_80038460",
+    "func_80038480",
+    "func_80038490",
+    "func_800384B0",
+    "func_800384C0",
+    "func_80038750",
+    "func_800387B0",
 ]
-# TODO(recon): ignored_funcs / renamed funcs as recon demands.
+ignored = [
+    # not in N64Recomp's built-in auto-ignore set (unlike osCartRomInit), but
+    # librecomp exports osDriveRomInit_recomp — route calls to the shim
+    # (recomp_api.cpp bridge); without this the recompiled copy duplicates the
+    # bridge symbol at link time (No Mercy/WM2000's exact arrangement).
+    "osDriveRomInit",
+]
 
 # Idle-thread cooperative-yield fix — EVERY sister needed it (WT devlog; No Mercy
 # bringup session 2: main thread parks in a busy spin after dropping priority to 0,
@@ -30,8 +53,11 @@ stubbed_funcs = [
 # grows, del/s=0, vis/s=0). Find the spin (`jal <tick>; j <loop>` right after the
 # osSetThreadPri(0) in the thread-1 main), then rewrite the backward j into a
 # self-branch (`b .` = 0x1000FFFF) so N64Recomp emits pause_self().
-# TODO(recon): fill func + address, then uncomment.
-# [[patches.instruction]]
-# func = "func_800004D0"
-# vram = 0x800005XX
-# value = 0x1000FFFF
+# VPW2 (2026-07-17): thread-1 main is func_800004D0 (SAME name/vram as NM+WM2K);
+# the spin is `jal 0x80032050; nop; j 0x800005A4` — the only unconditional
+# jal+backward-j loop in the fixed segment (idle_scan sweep). boot2 confirmed
+# the signature verbatim: ext backlog +60/s, del/s=0, vis/s=0.
+[[patches.instruction]]
+func = "func_800004D0"
+vram = 0x800005AC
+value = 0x1000FFFF

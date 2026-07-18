@@ -41,19 +41,46 @@ func_at = set()  # vrams with a function start (any section)
 for m in re.finditer(r'\{ name = "\w+", vram = (0x[0-9A-Fa-f]+)', dump):
     func_at.add(int(m.group(1), 16))
 
+# function name -> its dump.toml section (membership, not vram coverage — the
+# VPW2 lesson: func_80133D2C sits where ovl_d, the big both-slots image,
+# overlaps ovl_c's vram; coverage-based resolution picked ovl_c and read
+# instruction bytes as "table entries". Same membership scheme as fix_stumps,
+# including static_<idx>_* index resolution.)
+sec_positions = [(m.start(), m.group(1)) for m in re.finditer(r'^name = "(\w+)"', dump, re.M)]
+name2sec = {}
+for m in re.finditer(r'\{ name = "(\w+)", vram = (0x[0-9A-Fa-f]+)', dump):
+    s = None
+    for pos, sn in sec_positions:
+        if pos < m.start(): s = sn
+        else: break
+    name2sec[m.group(1)] = s
+
+def func_section(func_name):
+    sec = name2sec.get(func_name)
+    if sec is None:
+        sm = re.match(r'static_(\d+)_[0-9A-Fa-f]+$', func_name)
+        if sm and int(sm.group(1)) < len(sec_positions):
+            sec = sec_positions[int(sm.group(1))][1]
+    return sec
+
 def table_rom_offset(table_vram, func_name, body):
-    """Map the table vram to a rom offset via the section the FUNCTION lives in
-    (overlay slots overlap in vram; the function's own section is authoritative)."""
-    # pick the section containing the function's first decoded address
+    """Map the table vram to a rom offset via the section the FUNCTION belongs
+    to in dump.toml (overlay slots overlap in vram; the function's own section
+    is authoritative)."""
+    sec = func_section(func_name)
+    if sec is not None:
+        for n, vr, r, sz in sections:
+            # no upper bound: dump.toml's section size covers only the TEXT
+            # subsegment, but jump tables live in the overlay's DATA, which
+            # follows text contiguously in both rom and vram (linear mapping
+            # holds across the whole overlay image).
+            if n == sec and table_vram >= vr:
+                return (n, r + (table_vram - vr))
+    # fall back (function not in dump.toml): unique covering section
     first = int(re.search(r'// (0x[0-9A-F]{8}):', body).group(1), 16)
     cands = [(n, r + (table_vram - vr)) for n, vr, r, sz in sections
              if vr <= table_vram < vr + sz and vr <= first < vr + sz]
-    if len(cands) == 1:
-        return cands[0]
-    # fall back: any section covering both (e.g. island vs parent overlay ranges)
-    cands2 = [(n, r + (table_vram - vr)) for n, vr, r, sz in sections
-              if vr <= table_vram < vr + sz]
-    return cands2[0] if len(cands2) == 1 else (cands[0] if cands else None)
+    return cands[0] if len(cands) == 1 else None
 
 sw_err_re = re.compile(r'( *)default: switch_error\(__func__, (0x[0-9A-Fa-f]+), (0x[0-9A-Fa-f]+)\);')
 case_re = re.compile(r'case (\d+): ')
@@ -90,6 +117,17 @@ for path in sorted(glob.glob(os.path.join(ROOT, 'RecompiledFuncs', 'funcs_*.c'))
             ok = True
             for i in range(ncases, guard):
                 t = struct.unpack('>I', rom[romoff + i * 4: romoff + i * 4 + 4])[0]
+                if t == 0:
+                    # AKI jump tables are zero-terminated: vram 0 can never be a
+                    # case target, so the table genuinely ends here — the guard
+                    # heuristic latched onto an UNRELATED earlier sltiu (VPW2's
+                    # func_80133D2C: real bound 0x15, nearest-preceding was an
+                    # unrelated 0x19). The emitted switch is already complete.
+                    print('note %s jr@%08X: table terminator after %d entries; '
+                          'guard 0x%X was a misattributed sltiu — switch complete'
+                          % (name, pc, i, guard))
+                    ok = False  # nothing to patch; not counted as a failure
+                    break
                 dec = '    // 0x%08X:' % t
                 if dec in newbody:
                     lbl = 'L_%08X' % t
