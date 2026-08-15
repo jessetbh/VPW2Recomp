@@ -11,11 +11,18 @@ audio ucode text 0x41050 (+0xC54), gfx text 0x41CA4, audio dispatch table
 0x55920, overlay descriptor table 0x539A0 (FIVE overlays / TWO slots).
 WM2000: rspboot 0x39440, audio text 0x39510, gfx 0x3A164, dispatch 0x4A8F0.
 """
-import struct
+import os, struct
 
-VPW2 = r"C:\Users\selki\aki\Vpw2Recomp\vpw2.z64"
-NM   = r"C:\Users\selki\aki\NoMercyRecomp\nomercy.z64"
-WM2K = r"C:\Users\selki\aki\Wm2kRecomp\wm2k.z64"
+# Resolve ROMs relative to this script (workspace root = ../..) so no absolute
+# machine paths live in git; sibling repos sit alongside this one.
+_WS = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+
+def _sib(*parts):
+    return os.path.join(_WS, *parts)
+
+VPW2 = _sib("Vpw2Recomp", "vpw2.z64")
+NM   = _sib("NoMercyRecomp", "nomercy.z64")
+WM2K = _sib("Wm2kRecomp", "wm2k.z64")
 
 vp = open(VPW2, "rb").read()
 nm = open(NM, "rb").read()

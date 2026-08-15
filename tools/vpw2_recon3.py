@@ -8,9 +8,16 @@ sisters' documented evidence patterns (same three groups No Mercy had):
  - __osSiDeviceBusy: lui 0xA480 / lw 0x18 / andi 3 (SI_STATUS); the other
    candidates are SP/DP variants.
 Also dump the gfx-ucode identity-break neighborhood (run ended 0x3D497)."""
-import struct
+import os, struct
 
-VPW2 = r"C:\Users\selki\aki\Vpw2Recomp\vpw2.z64"
+# Resolve ROMs relative to this script (workspace root = ../..) so no absolute
+# machine paths live in git; sibling repos sit alongside this one.
+_WS = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+
+def _sib(*parts):
+    return os.path.join(_WS, *parts)
+
+VPW2 = _sib("Vpw2Recomp", "vpw2.z64")
 vp = open(VPW2, "rb").read()
 
 REG = ("zero at v0 v1 a0 a1 a2 a3 t0 t1 t2 t3 t4 t5 t6 t7 "

@@ -8,11 +8,18 @@ Pass-1 facts: rspboot text at 0x3A220 (byte-identical), audio text 0x3A2F0
 (+0xC54, byte-identical newer-AKI), gfx text 0x3AF44 (NM's first 0x100
 matched), audio dispatch table 0x4A730 (identical), overlay descriptor table
 at rom 0x488C0 (4 entries seen, two vram slots), game_main 0x80000460."""
-import re, struct
+import os, re, struct
 
-VPW2 = r"C:\Users\selki\aki\Vpw2Recomp\vpw2.z64"
-NM   = r"C:\Users\selki\aki\NoMercyRecomp\nomercy.z64"
-NM_DUMP = r"C:\Users\selki\aki\NoMercyRecomp\syms\dump.toml"
+# Resolve ROMs/symbols relative to this script (workspace root = ../..) so no
+# absolute machine paths live in git; sibling repos sit alongside this one.
+_WS = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+
+def _sib(*parts):
+    return os.path.join(_WS, *parts)
+
+VPW2 = _sib("Vpw2Recomp", "vpw2.z64")
+NM   = _sib("NoMercyRecomp", "nomercy.z64")
+NM_DUMP = _sib("NoMercyRecomp", "syms", "dump.toml")
 
 vp = open(VPW2, "rb").read()
 nm = open(NM, "rb").read()
