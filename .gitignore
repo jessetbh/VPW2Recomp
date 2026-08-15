@@ -90,3 +90,6 @@ tools/*.exe
 docs/screenshots/boot*.png
 ra*.log
 docs/ra-prototype-notes.md
+
+# Python bytecode cache
+__pycache__/
