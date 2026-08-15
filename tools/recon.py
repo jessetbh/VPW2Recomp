@@ -8,9 +8,9 @@ romStart, romEnd, entry, text/data/bss bounds), and an audio-ucode byte search
 """
 import struct
 
-WM2K = r"C:\Users\selki\depot\Wm2kRecomp\wm2k.z64"
-REV  = r"C:\Users\selki\depot\WcwRevengeRecomp\revenge.z64"
-WT   = r"C:\Users\selki\depot\WcwNwoWorldTour\wcw.z64"
+WM2K = r"C:\Users\selki\aki\Wm2kRecomp\wm2k.z64"
+REV  = r"C:\Users\selki\aki\WcwRevengeRecomp\revenge.z64"
+WT   = r"C:\Users\selki\aki\WcwNwoWorldTour\wcw.z64"
 
 wm = open(WM2K, "rb").read()
 rev = open(REV, "rb").read()

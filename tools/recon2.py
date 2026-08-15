@@ -11,9 +11,9 @@ ucode already matched byte-exact.
 """
 import re, struct
 
-WM2K = r"C:\Users\selki\depot\Wm2kRecomp\wm2k.z64"
-REV  = r"C:\Users\selki\depot\WcwRevengeRecomp\revenge.z64"
-REV_DUMP = r"C:\Users\selki\depot\WcwRevengeRecomp\syms\dump.toml"
+WM2K = r"C:\Users\selki\aki\Wm2kRecomp\wm2k.z64"
+REV  = r"C:\Users\selki\aki\WcwRevengeRecomp\revenge.z64"
+REV_DUMP = r"C:\Users\selki\aki\WcwRevengeRecomp\syms\dump.toml"
 
 wm = open(WM2K, "rb").read()
 rev = open(REV, "rb").read()

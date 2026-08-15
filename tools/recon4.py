@@ -8,9 +8,9 @@ transfer from Revenge (revised between libultra releases), using looser evidence
 """
 import re, struct
 
-wm = open(r"C:\Users\selki\depot\Wm2kRecomp\wm2k.z64", "rb").read()
-rev = open(r"C:\Users\selki\depot\WcwRevengeRecomp\revenge.z64", "rb").read()
-REV_DUMP = r"C:\Users\selki\depot\WcwRevengeRecomp\syms\dump.toml"
+wm = open(r"C:\Users\selki\aki\Wm2kRecomp\wm2k.z64", "rb").read()
+rev = open(r"C:\Users\selki\aki\WcwRevengeRecomp\revenge.z64", "rb").read()
+REV_DUMP = r"C:\Users\selki\aki\WcwRevengeRecomp\syms\dump.toml"
 
 def word(buf, off): return struct.unpack_from(">I", buf, off)[0]
 

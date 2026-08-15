@@ -11,7 +11,7 @@ Also: locate the two Vi getters' field source, and dump the gfx-ucode head for
 later RT64 GBI-database matching."""
 import struct
 
-NM = r"C:\Users\selki\depot\NoMercyRecomp\nomercy.z64"
+NM = r"C:\Users\selki\aki\NoMercyRecomp\nomercy.z64"
 nm = open(NM, "rb").read()
 
 REG = ("zero at v0 v1 a0 a1 a2 a3 t0 t1 t2 t3 t4 t5 t6 t7 "

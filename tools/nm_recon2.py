@@ -5,9 +5,9 @@ pockets in the fixed segment, and libultra fingerprint transfer from WM2000
 (adapted from tools/recon2.py, Wm2k's Revenge->WM2000 pass)."""
 import re, struct
 
-NM   = r"C:\Users\selki\depot\NoMercyRecomp\nomercy.z64"
-WM2K = r"C:\Users\selki\depot\Wm2kRecomp\wm2k.z64"
-WM_DUMP = r"C:\Users\selki\depot\Wm2kRecomp\syms\dump.toml"
+NM   = r"C:\Users\selki\aki\NoMercyRecomp\nomercy.z64"
+WM2K = r"C:\Users\selki\aki\Wm2kRecomp\wm2k.z64"
+WM_DUMP = r"C:\Users\selki\aki\Wm2kRecomp\syms\dump.toml"
 
 nm = open(NM, "rb").read()
 wm = open(WM2K, "rb").read()

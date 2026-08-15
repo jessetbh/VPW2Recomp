@@ -10,7 +10,7 @@ sisters' documented evidence patterns (same three groups No Mercy had):
 Also dump the gfx-ucode identity-break neighborhood (run ended 0x3D497)."""
 import struct
 
-VPW2 = r"C:\Users\selki\depot\Vpw2Recomp\vpw2.z64"
+VPW2 = r"C:\Users\selki\aki\Vpw2Recomp\vpw2.z64"
 vp = open(VPW2, "rb").read()
 
 REG = ("zero at v0 v1 a0 a1 a2 a3 t0 t1 t2 t3 t4 t5 t6 t7 "

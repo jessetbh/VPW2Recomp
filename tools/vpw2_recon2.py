@@ -10,9 +10,9 @@ matched), audio dispatch table 0x4A730 (identical), overlay descriptor table
 at rom 0x488C0 (4 entries seen, two vram slots), game_main 0x80000460."""
 import re, struct
 
-VPW2 = r"C:\Users\selki\depot\Vpw2Recomp\vpw2.z64"
-NM   = r"C:\Users\selki\depot\NoMercyRecomp\nomercy.z64"
-NM_DUMP = r"C:\Users\selki\depot\NoMercyRecomp\syms\dump.toml"
+VPW2 = r"C:\Users\selki\aki\Vpw2Recomp\vpw2.z64"
+NM   = r"C:\Users\selki\aki\NoMercyRecomp\nomercy.z64"
+NM_DUMP = r"C:\Users\selki\aki\NoMercyRecomp\syms\dump.toml"
 
 vp = open(VPW2, "rb").read()
 nm = open(NM, "rb").read()

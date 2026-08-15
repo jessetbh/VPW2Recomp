@@ -7,8 +7,8 @@ and (in nm_recon2) the libultra fingerprint source.
 """
 import struct
 
-NM   = r"C:\Users\selki\depot\NoMercyRecomp\nomercy.z64"
-WM2K = r"C:\Users\selki\depot\Wm2kRecomp\wm2k.z64"
+NM   = r"C:\Users\selki\aki\NoMercyRecomp\nomercy.z64"
+WM2K = r"C:\Users\selki\aki\Wm2kRecomp\wm2k.z64"
 
 nm = open(NM, "rb").read()
 wm = open(WM2K, "rb").read()

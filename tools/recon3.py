@@ -11,7 +11,7 @@
 """
 import struct
 
-wm = open(r"C:\Users\selki\depot\Wm2kRecomp\wm2k.z64", "rb").read()
+wm = open(r"C:\Users\selki\aki\Wm2kRecomp\wm2k.z64", "rb").read()
 
 FIXED = (0x1000, 0x4C160, 0x80000400)
 OVLS = [  # (romStart, textSizeBytes, vramText) from descriptors

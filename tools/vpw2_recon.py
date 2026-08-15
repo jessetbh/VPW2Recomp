@@ -13,9 +13,9 @@ WM2000: rspboot 0x39440, audio text 0x39510, gfx 0x3A164, dispatch 0x4A8F0.
 """
 import struct
 
-VPW2 = r"C:\Users\selki\depot\Vpw2Recomp\vpw2.z64"
-NM   = r"C:\Users\selki\depot\NoMercyRecomp\nomercy.z64"
-WM2K = r"C:\Users\selki\depot\Wm2kRecomp\wm2k.z64"
+VPW2 = r"C:\Users\selki\aki\Vpw2Recomp\vpw2.z64"
+NM   = r"C:\Users\selki\aki\NoMercyRecomp\nomercy.z64"
+WM2K = r"C:\Users\selki\aki\Wm2kRecomp\wm2k.z64"
 
 vp = open(VPW2, "rb").read()
 nm = open(NM, "rb").read()
