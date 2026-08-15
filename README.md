@@ -89,12 +89,18 @@ a decompilation.**
 
 #### How is this related to a decompilation project?
 
-It isn't — no public decompilation of Virtual Pro Wrestling 2 exists. Unlike most
-recompilation ports, which borrow symbol names from a decomp, this project generates
-its own symbol metadata from scratch via a [splat](https://github.com/ethteck/splat)
-disassembly (see `disasm/` and `syms/`), transferring libultra identifications from
-its sister projects WWF No Mercy and WWF WrestleMania 2000 by machine-code
-fingerprinting.
+This port is an independent effort, separate from the
+[AKI-Club VPW2 decompilation](https://github.com/AKI-Club/vpw2) — no code or
+symbol names from that project were used in this port's development. Unlike
+most recompilation ports, which borrow symbol names from a decomp, this
+project generates its own symbol metadata from scratch via a
+[splat](https://github.com/ethteck/splat) disassembly (see `disasm/` and
+`syms/`), transferring libultra identifications from its sister projects
+WWF No Mercy and WWF WrestleMania 2000 by machine-code fingerprinting.
+
+Credit where due: the AKI-Club decomp team has done years of groundwork
+mapping VPW2's internals, and we expect to draw on their documentation as
+mod support for this port develops — with attribution, of course.
 
 #### Which ROM does it use?
 
@@ -177,3 +183,5 @@ See [BUILDING.md](BUILDING.md).
   follows.
 * ethteck and the splat/spimdisasm contributors — the disassembly tooling that made a
   no-decomp recompilation possible.
+* [AKI-Club](https://github.com/AKI-Club/vpw2) — for their long-running VPW2
+  decompilation work.
