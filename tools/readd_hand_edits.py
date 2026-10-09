@@ -73,6 +73,27 @@ def main():
     #                    ['<LF-terminated diagnostic lines>\n'], 'mytag')
     #       save_lines('funcs_NN.c', lines)
     applied = []
+
+    # [vpw2][rt] Ray tracing experiment (exp/raytracing; src/game/raytracing.cpp): hand
+    # RT64 the real camera. Both calls are no-ops unless WCW_RT is set.
+    lines = load_lines('funcs_0.c')
+    if not any('[vpw2][rt]' in l for l in lines):
+        rng = body_range(lines, 'func_80001768')
+        if insert_after(lines, rng, '    ctx->r4 = ADD32(ctx->r6, 0);',
+                        ['    { /* [vpw2][rt] camera latch: a1 = P, a2 = V */\n',
+                         '      extern void wcw_rt_latch_camera(uint8_t* rdram, uint32_t proj_vaddr, uint32_t view_vaddr);\n',
+                         '      wcw_rt_latch_camera(rdram, (uint32_t)ctx->r5, (uint32_t)ctx->r6); }\n'], 'rt-latch'):
+            save_lines('funcs_0.c', lines)
+            applied.append('rt camera latch (func_80001768)')
+    lines = load_lines('funcs_1.c')
+    if not any('[vpw2][rt]' in l for l in lines):
+        rng = body_range(lines, 'func_800033D4')
+        if insert_after(lines, rng, '    func_80002E40(rdram, ctx);',
+                        ['    { /* [vpw2][rt] after the frame DL head is returned in v0 */\n',
+                         '      extern uint32_t wcw_rt_emit_camera(uint8_t* rdram, uint32_t gfx);\n',
+                         '      ctx->r2 = (int64_t)(int32_t)wcw_rt_emit_camera(rdram, (uint32_t)ctx->r2); }\n'], 'rt-emit'):
+            save_lines('funcs_1.c', lines)
+            applied.append('rt camera emit (func_800033D4)')
     print('readd_hand_edits: ' + ('; '.join(applied) if applied else 'nothing registered (bootstrap state)'))
     if failures:
         for f_ in failures:
