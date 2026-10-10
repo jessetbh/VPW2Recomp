@@ -6,7 +6,7 @@
 // Like every AKI engine, VPW2 composes each MVP on the CPU (object matrix x V x P,
 // latched by func_80001768 into D_80056F78) and submits it via forced matrices, so RT64
 // never sees a projection and its "world" transforms are clip-space MVPs. Ray tracing
-// needs true world space, so (with WCW_RT=1 only) two hand-edits in RecompiledFuncs
+// needs true world space, so two hand-edits in RecompiledFuncs
 // (tools/readd_hand_edits.py) call in here:
 //  - wcw_rt_latch_camera: at the top of func_80001768(cam, P, V), the camera latch every
 //    camera setup goes through (guPerspectiveF = func_80031910, guLookAtF = func_80030F80),
@@ -34,9 +34,10 @@ namespace {
     uint32_t camera_view[16];
     uint32_t camera_proj[16];
 
+    // The camera is always handed over; RT64 uses it only while ray tracing is active (the
+    // Graphics menu option or WCW_RT) and ignores it otherwise, so it can toggle at runtime.
     bool rt_enabled() {
-        static const bool enabled = getenv("WCW_RT") != nullptr;
-        return enabled;
+        return true;
     }
 
     // RDRAM words are stored native-endian (N64Recomp's MEM_W layout); vaddr is KSEG0.
