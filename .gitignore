@@ -93,3 +93,16 @@ docs/ra-prototype-notes.md
 
 # Python bytecode cache
 __pycache__/
+
+# ROM-hack patch-mod testing (portable mode: config, saves and mods land in the repo root)
+/portable.txt
+/mods/
+/mod_config/
+/saves/
+/romhack-test/
+/general.json*
+/graphics.json*
+/controls.json*
+/mods.json*
+/sound.json*
+/build*.log
