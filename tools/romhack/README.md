@@ -27,8 +27,9 @@ function tables in `RecompiledFuncs/recomp_overlays.inl`:
   function boundaries. Patch mods can't run that; it needs a full recompile of the hacked
   ROM (the VPW2 Freem `exp/freem` method).
 
-Only one ROM-patch mod can be enabled at a time. A patch mod shares the stock game's saves,
-so a hack that changes the save layout can damage them.
+Only one ROM-patch mod can be enabled at a time. On the `wcw-romhack` runtime a patch mod's
+saves go to `saves/<mod id>/`, apart from the stock game's (a plain runtime shares them, so a
+hack that changes the save layout could damage them).
 
 ## Verified
 
