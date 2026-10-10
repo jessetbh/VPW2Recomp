@@ -106,3 +106,5 @@ __pycache__/
 /mods.json*
 /sound.json*
 /build*.log
+/romhack_raw_recomp.toml
+/RecompiledFuncs/repaired_functions.txt

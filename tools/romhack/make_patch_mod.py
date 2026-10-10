@@ -178,6 +178,8 @@ def main():
     ap.add_argument('--description', default='')
     ap.add_argument('--minimum-recomp-version', default='0.1.0')
     ap.add_argument('--overlays', default='RecompiledFuncs/recomp_overlays.inl', help='generated section tables for the report')
+    ap.add_argument('--repaired', default='RecompiledFuncs/repaired_functions.txt',
+                    help='functions the post-recompile pipeline changed (tools/romhack/list_repaired_functions.py)')
     ap.add_argument('--out', help='output .nrm (omit to only print the report)')
     args = ap.parse_args()
 
@@ -194,8 +196,17 @@ def main():
     print('ROM: %d bytes -> %d bytes, %d bytes differ' % (len(base), len(hack), diff))
     print('code: %d sections, %d bytes; %d changed function(s), %d changed byte(s) outside functions'
           % (len(sections), code_bytes, len(funcs), loose))
+    repaired = set()
+    try:
+        repaired = {l.strip() for l in open(args.repaired, encoding='utf-8') if l.strip() and not l.startswith('#')}
+    except FileNotFoundError:
+        print('(no %s: run tools/romhack/list_repaired_functions.py to check for pipeline repairs)' % args.repaired)
     for section, func, vram, size, words in funcs:
-        print('  %-12s %-28s 0x%08X  %5d bytes, %d word(s) changed' % (section, func, vram, size, words))
+        print('  %-12s %-28s 0x%08X  %5d bytes, %d word(s) changed%s' % (section, func, vram, size, words,
+              '  [REPAIRED by the pipeline: recompiling it at load drops the repair]' if func in repaired else ''))
+    risky = [f for f in funcs if f[1] in repaired]
+    if risky:
+        print('WARNING: %d changed function(s) carry pipeline repairs or hand-edits; test them closely.' % len(risky))
     if funcs:
         print('-> changes code: needs a runtime that recompiles changed functions from the patch.')
     else:
