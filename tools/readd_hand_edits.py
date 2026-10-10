@@ -76,15 +76,23 @@ def main():
 
     # [vpw2][rt] Ray tracing experiment (exp/raytracing; src/game/raytracing.cpp): hand
     # RT64 the real camera. Both calls are no-ops unless WCW_RT is set.
+    # The latch sits in the matrix multiply func_80001768 calls, not in func_80001768 itself:
+    # mods hook func_80001768 (AkiMods' camera) and a hooked function is recompiled from the
+    # ROM without hand-edits. Older generated files had it in func_80001768: strip that site.
     lines = load_lines('funcs_0.c')
-    if not any('[vpw2][rt]' in l for l in lines):
-        rng = body_range(lines, 'func_80001768')
-        if insert_after(lines, rng, '    ctx->r4 = ADD32(ctx->r6, 0);',
-                        ['    { /* [vpw2][rt] camera latch: a1 = P, a2 = V */\n',
-                         '      extern void wcw_rt_latch_camera(uint8_t* rdram, uint32_t proj_vaddr, uint32_t view_vaddr);\n',
-                         '      wcw_rt_latch_camera(rdram, (uint32_t)ctx->r5, (uint32_t)ctx->r6); }\n'], 'rt-latch'):
+    old = next((i for i, l in enumerate(lines) if '[vpw2][rt] camera latch: a1 = P, a2 = V' in l), None)
+    if old is not None:
+        del lines[old:old + 3]
+        save_lines('funcs_0.c', lines)
+        applied.append('removed old rt camera latch (func_80001768)')
+    if not any('[vpw2][rt] camera latch: a0 = V' in l for l in lines):
+        rng = body_range(lines, 'func_80002108')
+        if insert_after(lines, rng, '    int c1cs = 0;',
+                        ['    { /* [vpw2][rt] camera latch: a0 = V, a1 = P, a2 = product (the camera matrix when called from the camera builder) */\n',
+                         '      extern void wcw_rt_latch_camera_multiply(uint8_t* rdram, uint32_t view_vaddr, uint32_t proj_vaddr, uint32_t dest_vaddr);\n',
+                         '      wcw_rt_latch_camera_multiply(rdram, (uint32_t)ctx->r4, (uint32_t)ctx->r5, (uint32_t)ctx->r6); }\n'], 'rt-latch'):
             save_lines('funcs_0.c', lines)
-            applied.append('rt camera latch (func_80001768)')
+            applied.append('rt camera latch (func_80002108)')
     lines = load_lines('funcs_1.c')
     if not any('[vpw2][rt]' in l for l in lines):
         rng = body_range(lines, 'func_800033D4')
