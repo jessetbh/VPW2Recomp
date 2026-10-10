@@ -27,13 +27,15 @@ def bodies(folder):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('--toml', default=None, help='recompiler config (default: the only *.toml at the repo root)')
+    ap.add_argument('--toml', default=None, help='recompiler config (default: the *.toml at the repo root that writes RecompiledFuncs)')
     ap.add_argument('--recompiler', default='N64Recomp.exe')
     args = ap.parse_args()
 
-    toml = args.toml or next(iter(glob.glob('*.toml')), None)
+    # The game's config is the one that writes RecompiledFuncs (World Tour also has patches.toml).
+    toml = args.toml or next((t for t in sorted(glob.glob('*.toml'))
+                              if re.search(r'^output_func_path\s*=\s*"RecompiledFuncs"', open(t, encoding='utf-8').read(), re.M)), None)
     if toml is None:
-        sys.exit('no recompiler config found; pass --toml')
+        sys.exit('no recompiler config writing RecompiledFuncs found; pass --toml')
 
     raw = os.path.join('romhack-test', 'raw_recomp')
     shutil.rmtree(raw, ignore_errors=True)
