@@ -36,6 +36,7 @@ are this one's closest references.
 * [Features](#features)
 * [Known Issues](#known-issues)
 * [FAQ](#faq)
+* [Mods and ROM Hacks](#mods-and-rom-hacks)
 * [Building](#building)
 * [Libraries Used and Projects Referenced](#libraries-used-and-projects-referenced)
 * [Special Thanks](#special-thanks)
@@ -108,15 +109,15 @@ This project is **only** a port of Virtual Pro Wrestling 2, and it only accepts 
 specific ROM: the Japanese release *Virtual Pro Wrestling 2 - Ōdō Keishō* (NA2J,
 SHA1 `82DD25A044689EAB57AB362FE10C0DA6388C217A`). VPW2 was never released outside
 Japan, so there is only one cartridge revision. Fan-translation patched ROMs are
-**not** accepted (their hashes differ) — a translation may become a mod on top of
-the clean ROM later.
+**not** accepted as the game ROM (their hashes differ), but several run as patch mods on
+top of the clean ROM: see [Mods and ROM Hacks](#mods-and-rom-hacks).
 **It is not an emulator and it cannot run any arbitrary ROM.**
 
 #### The game is in Japanese — will there be a translation?
 
-The port runs the original Japanese game. The well-known community English
-translation cannot be applied to the ROM this project consumes, but the family's
-planned mod support is the natural home for it eventually.
+The port runs the original Japanese game. Community English translations can be
+installed as patch mods made from your own patched ROM: see
+[Mods and ROM Hacks](#mods-and-rom-hacks).
 
 #### Where is the savefile stored?
 
@@ -131,6 +132,50 @@ same app folder.
 
 Yes — place a file named `portable.txt` in the same folder as the executable and
 saves, config files, and the stored ROM will be kept next to the executable instead.
+
+## Mods and ROM Hacks
+
+This port loads mods in the `.nrm` format used by the N64: Recompiled projects.
+
+#### Installing a mod
+
+Copy the `.nrm` file into the game's mods folder and start the game:
+
+- Windows: `%LOCALAPPDATA%\Vpw2Recompiled\mods\` (or `mods\` next to the executable in portable mode)
+
+New mods are switched on by default. Builds with the in-game **Mods** menu (Settings → Mods)
+can also install mods there (**Install Mods**, or drag the file onto the window) and switch
+them on and off. Mods are applied when the game starts, so restart after changing them. To
+remove a mod, delete its file.
+
+#### ROM hacks as patch mods
+
+A ROM hack can run as a *patch mod*: a mod that holds only a patch against the stock ROM. The
+game applies it to your own ROM when it starts, and any game code the hack changes is
+recompiled on the fly. It works for hacks that:
+
+- are built on the same ROM this port uses (see the ROM's SHA1 above), and
+- change code only inside the game's existing functions (data changes of any size are fine).
+
+Hacks that rebuild or move the game's code, or are made for another revision, need a full
+recompile and can't run as patch mods. Only one patch mod can be on at a time; each one keeps
+its own saves in `saves\<mod id>\`, apart from the stock game's.
+
+To make one from a hack ROM you have patched yourself (both ROMs must be big-endian `.z64`):
+
+```
+python tools\romhack\make_patch_mod.py --base vpw2.z64 --hack my_hack.z64 --game-id vpw2 --id my_hack --name "My Hack" --out my_hack.nrm
+```
+
+Run it from a checkout of this repository after building. It reports what the hack changes
+and refuses hacks that need a full recompile; see [tools/romhack/README.md](tools/romhack/README.md).
+Patch mods can contain the hack's and the original game's data, so **don't share patch mods
+you don't have the rights to**: make your own from your own ROMs.
+
+Known results for VPW2:
+
+- Work as patch mods: *Virtual Pro Wrestling 2 - Freem Edition*, *All-Japan Pro Wrestling 64* (Beta 3), the *[English Patched]* translation, the *English Beta 3 (rey)* translation, *Virtual Pro Wrestling 2 (Unlocked)* (everything unlocked).
+- Need a full recompile: the *(English Patch)* release that rewrites code across functions (the game refuses it at start with "Invalid ROM patch").
 
 ## Building
 
