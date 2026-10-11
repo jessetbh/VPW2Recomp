@@ -63,6 +63,52 @@ def ensure_include(lines, why):
     if not any(l.startswith('#include <stdio.h>') for l in lines):
         lines.insert(0, '#include <stdio.h>  /* [vpw2 HAND-EDIT] %s */\n' % why)
 
+
+# ---------------- frame interpolation (60 fps) matrix hooks ----------------
+# [vpw2][hfr] RT64 interpolates models from their camera-independent matrices, which the game only
+# exposes when it multiplies them with the camera. func_80002108 (out = A * B) hands A and the camera to
+# RT64 keyed by the output address; guMtxF2L (func_80034340) moves the entry to the fixed-point matrix that
+# gSPForceMatrix uploads (lib/rt64/src/hle/rt64_rsp.cpp, wcw_interp_* functions). Neither function
+# is hooked by a mod. The hooks only store matrices; RT64 uses them only at a framerate above 30.
+def hfr_hand_edits():
+    done = []
+    lines = load_lines('funcs_0.c')
+    if not any('wcw_interp_process_multiply(wcw_dst' in l for l in lines):
+        rng = body_range(lines, 'func_80002108')
+        if insert_after(lines, rng, '    int c1cs = 0;', [
+                '    { /* [vpw2][hfr] func_80002108 is a 4x4 multiply (out = A * B). When B is the camera matrix\n',
+                "         (0x80056F78), pass A (the object's camera-independent matrix) and B to RT64, keyed by\n",
+                '         the output address; otherwise drop any stale entry for that address. */\n',
+                '        extern void wcw_interp_process_multiply(uint32_t destAddr, uint32_t opBAddr, uint32_t srcAddr, const float* aMatrix16, const float* bMatrix16);\n',
+                '        extern void wcw_interp_invalidate_local_matrix(uint32_t destAddr);\n',
+                '        uint32_t wcw_dst = (uint32_t)ctx->r6;\n',
+                '        if ((uint32_t)ctx->r5 == 0x80056F78u) {\n',
+                '            union { uint32_t u; float f; } wcw_bits;\n',
+                '            float wcw_a[16], wcw_b[16];\n',
+                '            for (int wcw_i = 0; wcw_i < 16; wcw_i++) {\n',
+                '                wcw_bits.u = (uint32_t)MEM_W(ctx->r4, wcw_i * 4); wcw_a[wcw_i] = wcw_bits.f;\n',
+                '                wcw_bits.u = (uint32_t)MEM_W(ctx->r5, wcw_i * 4); wcw_b[wcw_i] = wcw_bits.f;\n',
+                '            }\n',
+                '            wcw_interp_process_multiply(wcw_dst, (uint32_t)ctx->r5, (uint32_t)ctx->r4, wcw_a, wcw_b);\n',
+                '        }\n',
+                '        else {\n',
+                '            wcw_interp_invalidate_local_matrix(wcw_dst);\n',
+                '        }\n',
+                '    }\n'], 'hfr-matrix'):
+            save_lines('funcs_0.c', lines)
+            done.append('matrix hook (func_80002108)')
+    lines = load_lines('funcs_14.c')
+    if not any('wcw_interp_forward_local_matrix((uint32_t)' in l for l in lines):
+        rng = body_range(lines, 'func_80034340')
+        if insert_after(lines, rng, '    int c1cs = 0;', [
+                "    { /* [vpw2][hfr] func_80034340 is guMtxF2L. Move the matrix hook's entry from the float source (a0)\n",
+                '         to the fixed-point destination (a1) that gSPForceMatrix uploads. */\n',
+                '      extern void wcw_interp_forward_local_matrix(uint32_t srcAddr, uint32_t dstAddr);\n',
+                '      wcw_interp_forward_local_matrix((uint32_t)ctx->r4, (uint32_t)ctx->r5); }\n'], 'hfr-f2l'):
+            save_lines('funcs_14.c', lines)
+            done.append('F2L hook (func_80034340)')
+    return 'frame interpolation hooks: ' + ('; '.join(done) if done else 'present')
+
 def main():
     # Register hand-edits here as bring-up demands them. Pattern per edit:
     #   lines = load_lines('funcs_NN.c')
@@ -102,6 +148,7 @@ def main():
                          '      ctx->r2 = (int64_t)(int32_t)wcw_rt_emit_camera(rdram, (uint32_t)ctx->r2); }\n'], 'rt-emit'):
             save_lines('funcs_1.c', lines)
             applied.append('rt camera emit (func_800033D4)')
+    applied.append(hfr_hand_edits())
     print('readd_hand_edits: ' + ('; '.join(applied) if applied else 'nothing registered (bootstrap state)'))
     if failures:
         for f_ in failures:
