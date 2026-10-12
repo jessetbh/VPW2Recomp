@@ -60,10 +60,21 @@
             "outsideEdge": 600
         },
         {
+            // AKI Hall: small old hall with a low ceiling (~690) and round wall lamps. Warm tungsten bulbs just under the
+            // ceiling over the ring, harder shadows; amber wall-lamp glows on the side walls.
             "name": "AKI Hall",
             "match": ["9B0A178A6E383FEF", "324FE775293626BD", "02CE2EC855AD8E43", "96053EEC16C6A662", "503F8B67FF072073",
                       "363D055826344249", "D7412D55AE78557F", "EEF959FD16B695BB", "549E4EB6979158CB", "150AEDA7A57C7DA6",
-                      "9A67DD3ED1C2A035", "2F43CB623948EA6D", "D211BB245F577FE9", "CD42D0E5CC716E4B"]
+                      "9A67DD3ED1C2A035", "2F43CB623948EA6D", "D211BB245F577FE9", "CD42D0E5CC716E4B"],
+            "lights": [[0, 640, 0, 3], [-320, 620, -320, 1], [320, 620, -320, 1], [-320, 620, 320, 1], [320, 620, 320, 1]],
+            "size": 30,
+            "radius": 650,
+            "shadow": 0.75,
+            "characterShadow": 0.45,
+            "color": [1.0, 0.86, 0.66],
+            "outsideDarkness": 0.45,
+            "outsideEdge": 500,
+            "glows": [[-950, 450, 0, 2.0, 650, 1.0, 0.75, 0.45], [1500, 450, 0, 2.0, 650, 1.0, 0.75, 0.45]]
         },
         {
             "name": "Ballpark",
