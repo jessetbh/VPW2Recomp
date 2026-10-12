@@ -1,0 +1,60 @@
+{
+    // Ray tracing light presets (read by RT64's WcwRaytracer; reloaded when this file changes).
+    // "default" applies to any venue not matched below. A venue is recognized by its "match" list of world texture
+    // hashes (WCW_RT_VENUE_LOG=1 prints the current scene's candidates; the Lighting editor's "New venue from scene"
+    // writes one). When two venues both match fully, the later one in the list wins.
+    // Fields: center [x, y, z] (receiver center on X/Z, key light height on Y), spread, fills, keyWeight, size (light
+    // panel width), radius (shadow receiver radius), shadow, characterShadow, clearance, falloff, anchor ("scene":
+    // offsets from the drawn scene's center and floor), or "lights": [[x, y, z, weight], ...] to place up to 8 lights
+    // explicitly (these cast the shadows).
+    // Colored light: "color" [r, g, b] tints every light (white = none; normalized, so brightness stays the same),
+    // "keyColor" / "fillColor" for the generated rig, [x, y, z, weight, r, g, b] for one light.
+    // Glows: [[x, y, z, intensity, range(, r, g, b(, flicker))], ...] (up to 4) add light in all directions, also
+    // outside the radius; they light traced geometry (floor, ramp, sets), never crowd sprites or screens. The color is
+    // not normalized (it scales the glow); flicker 0..1 = a failing tube that blinks off now and then.
+    // "outsideDarkness" (0..1) darkens everything beyond the receiver radius (crowd, arena, wrestlers out there), easing
+    // in over "outsideEdge"; "litAreas" [[x, z, radius, edge], ...] (up to 2) are places with their own light that stay
+    // out of that darkness.
+    //
+    // Virtual Pro Wrestling 2 (rigged 2026-10-12 with the AkiMods quickmatch mod + free camera): the four venues of the
+    // exhibition venue screen (Budokan, Dome, AKI Hall, Ballpark) and a fifth demo venue, the Dome with an entrance
+    // ramp and light towers (listed after the Dome so it wins when both match).
+    "default": {
+        "center": [0, 650, 0],
+        "lights": [[0, 650, 0, 2], [-320, 600, -320, 1], [320, 600, -320, 1], [-320, 600, 320, 1], [320, 600, 320, 1]],
+        "size": 20,
+        "radius": 650,
+        "shadow": 0.6,
+        "characterShadow": 0.35
+    },
+    "venues": [
+        {
+            "name": "Budokan",
+            "match": ["2D8426BC4C008B52", "0E9F695AF935238D", "A15A628BCC45B700", "939C9B4AF6A02251", "8F889156FE5DF536",
+                      "5F3EF536884AC497", "CE930D1C79E16746", "888D35BAB97FFAEC", "D89DD1F5EFA8105D", "6D1F65E027EEF902"]
+        },
+        {
+            "name": "Dome",
+            "match": ["99FF27E7FB072F1B", "4FA8FF4A2D5A422A", "D7139735DDF56347", "3A72395C9933CBF7", "4C88EBF22FE840C5",
+                      "5C76B04178AF7FEC", "A2A4D0D05933C434", "533265D33496917E", "BA266488895CB1F0", "9FC355C33111FBDB",
+                      "90DD7B9177BF8585", "A6F56C1CF5EFEB76", "0A2455B7DA823A5F", "7BC00FA99FD8148D", "322302A5319628E6"]
+        },
+        {
+            "name": "AKI Hall",
+            "match": ["9B0A178A6E383FEF", "324FE775293626BD", "02CE2EC855AD8E43", "96053EEC16C6A662", "503F8B67FF072073",
+                      "363D055826344249", "D7412D55AE78557F", "EEF959FD16B695BB", "549E4EB6979158CB", "150AEDA7A57C7DA6",
+                      "9A67DD3ED1C2A035", "2F43CB623948EA6D", "D211BB245F577FE9", "CD42D0E5CC716E4B"]
+        },
+        {
+            "name": "Ballpark",
+            "match": ["9382E06D28292B28", "1D94687BBA7551F8", "50E020B798F27F5A", "CEBD051E291393F0", "E4F5D568814AB290",
+                      "57DF0E34B34E0A3A", "0BD614E9FFCE89AD", "5672112F8D0A5DFB", "52C3673F89A59AC0", "4C0B645CEC286556",
+                      "7B81D8FD6AEA5B06", "2852E694D506192E", "F4D7D258B308D9FD", "74140763A6860BC1", "0A96948348B13B2F"]
+        },
+        {
+            "name": "Dome (entrance)",
+            "match": ["CC0148C519BEFA3B", "3A589A9F6A9B2D15", "91A9321195BDF3F0", "4E48EE0503BDABC5", "F69E62286266E2A7",
+                      "F3B0F2B8106B3E6D", "D70DD1BDEE599A29", "D561E163A4DE0A51"]
+        }
+    ]
+}
