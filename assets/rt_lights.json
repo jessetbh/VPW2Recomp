@@ -44,10 +44,20 @@
             "outsideEdge": 600
         },
         {
+            // Dome: huge hall under a fabric roof. Cool white TV light from high over the ring and four corner lamps;
+            // the stands fall into darkness.
             "name": "Dome",
             "match": ["99FF27E7FB072F1B", "4FA8FF4A2D5A422A", "D7139735DDF56347", "3A72395C9933CBF7", "4C88EBF22FE840C5",
                       "5C76B04178AF7FEC", "A2A4D0D05933C434", "533265D33496917E", "BA266488895CB1F0", "9FC355C33111FBDB",
-                      "90DD7B9177BF8585", "A6F56C1CF5EFEB76", "0A2455B7DA823A5F", "7BC00FA99FD8148D", "322302A5319628E6"]
+                      "90DD7B9177BF8585", "A6F56C1CF5EFEB76", "0A2455B7DA823A5F", "7BC00FA99FD8148D", "322302A5319628E6"],
+            "lights": [[0, 1600, 0, 3], [-450, 1500, -450, 1], [450, 1500, -450, 1], [-450, 1500, 450, 1], [450, 1500, 450, 1]],
+            "size": 40,
+            "radius": 700,
+            "shadow": 0.65,
+            "characterShadow": 0.4,
+            "color": [0.92, 0.95, 1.0],
+            "outsideDarkness": 0.6,
+            "outsideEdge": 600
         },
         {
             "name": "AKI Hall",
