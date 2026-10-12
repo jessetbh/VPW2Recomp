@@ -29,9 +29,19 @@
     },
     "venues": [
         {
+            // Budokan: octagonal hall under a ceiling grid of gold lamps. Warm key high over the ring and four corner lamps,
+            // spotlit ring with the stands dimmed.
             "name": "Budokan",
             "match": ["2D8426BC4C008B52", "0E9F695AF935238D", "A15A628BCC45B700", "939C9B4AF6A02251", "8F889156FE5DF536",
-                      "5F3EF536884AC497", "CE930D1C79E16746", "888D35BAB97FFAEC", "D89DD1F5EFA8105D", "6D1F65E027EEF902"]
+                      "5F3EF536884AC497", "CE930D1C79E16746", "888D35BAB97FFAEC", "D89DD1F5EFA8105D", "6D1F65E027EEF902"],
+            "lights": [[0, 1500, 0, 3], [-450, 1400, -450, 1], [450, 1400, -450, 1], [-450, 1400, 450, 1], [450, 1400, 450, 1]],
+            "size": 40,
+            "radius": 700,
+            "shadow": 0.65,
+            "characterShadow": 0.4,
+            "color": [1.0, 0.9, 0.74],
+            "outsideDarkness": 0.55,
+            "outsideEdge": 600
         },
         {
             "name": "Dome",
