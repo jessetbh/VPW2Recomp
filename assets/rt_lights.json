@@ -93,9 +93,21 @@
             "outsideEdge": 700
         },
         {
+            // Dome with the entrance set: the Dome's roof light plus the four truss light towers at the ring corners; the ramp
+            // from +Z washed white.
             "name": "Dome (entrance)",
             "match": ["CC0148C519BEFA3B", "3A589A9F6A9B2D15", "91A9321195BDF3F0", "4E48EE0503BDABC5", "F69E62286266E2A7",
-                      "F3B0F2B8106B3E6D", "D70DD1BDEE599A29", "D561E163A4DE0A51"]
+                      "F3B0F2B8106B3E6D", "D70DD1BDEE599A29", "D561E163A4DE0A51"],
+            "lights": [[0, 1600, 0, 3], [-550, 1000, -550, 1], [550, 1000, -550, 1], [-550, 1000, 550, 1], [550, 1000, 550, 1]],
+            "size": 40,
+            "radius": 700,
+            "shadow": 0.65,
+            "characterShadow": 0.4,
+            "color": [0.92, 0.95, 1.0],
+            "outsideDarkness": 0.6,
+            "outsideEdge": 600,
+            "litAreas": [[0, 1300, 450, 400]],
+            "glows": [[0, 150, 1000, 2.0, 900, 0.9, 0.95, 1.0], [0, 150, 1600, 2.0, 900, 0.9, 0.95, 1.0]]
         }
     ]
 }
