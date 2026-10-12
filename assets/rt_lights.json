@@ -77,10 +77,20 @@
             "glows": [[-950, 450, 0, 2.0, 650, 1.0, 0.75, 0.45], [1500, 450, 0, 2.0, 650, 1.0, 0.75, 0.45]]
         },
         {
+            // Ballpark: open-air stadium at night (stars, city skyline). Metal-halide floodlight towers: a high key and four
+            // lights far out on the diagonals throwing long crossing shadows.
             "name": "Ballpark",
             "match": ["9382E06D28292B28", "1D94687BBA7551F8", "50E020B798F27F5A", "CEBD051E291393F0", "E4F5D568814AB290",
                       "57DF0E34B34E0A3A", "0BD614E9FFCE89AD", "5672112F8D0A5DFB", "52C3673F89A59AC0", "4C0B645CEC286556",
-                      "7B81D8FD6AEA5B06", "2852E694D506192E", "F4D7D258B308D9FD", "74140763A6860BC1", "0A96948348B13B2F"]
+                      "7B81D8FD6AEA5B06", "2852E694D506192E", "F4D7D258B308D9FD", "74140763A6860BC1", "0A96948348B13B2F"],
+            "lights": [[0, 2000, 0, 2], [-1500, 1700, -1500, 1], [1500, 1700, -1500, 1], [-1500, 1700, 1500, 1], [1500, 1700, 1500, 1]],
+            "size": 60,
+            "radius": 800,
+            "shadow": 0.7,
+            "characterShadow": 0.45,
+            "color": [0.9, 0.95, 1.0],
+            "outsideDarkness": 0.5,
+            "outsideEdge": 700
         },
         {
             "name": "Dome (entrance)",
