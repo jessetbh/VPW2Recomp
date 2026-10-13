@@ -1,0 +1,19 @@
+{
+  "$schema": "https://recomp.fyi/schema/v1.json",
+  "game": "Virtual Pro Wrestling 2: Ōdō Keishō",
+  "project": "Virtual Pro Wrestling 2: Recompiled",
+  "system": "N64",
+  "type": "recomp",
+  "status": "released",
+  "targets": [
+    "Windows"
+  ],
+  "toolchain": [
+    "N64Recomp",
+    "RT64"
+  ],
+  "original": {
+    "region": "Japan",
+    "sha1": "82dd25a044689eab57ab362fe10c0da6388c217a"
+  }
+}
