@@ -34,6 +34,7 @@ are this one's closest references.
 ## Table of Contents
 * [System Requirements](#system-requirements)
 * [Features](#features)
+* [Compared with Emulation](#compared-with-emulation)
 * [Known Issues](#known-issues)
 * [FAQ](#faq)
 * [Lighting](#lighting-ray-tracing)
@@ -78,6 +79,23 @@ Planned:
 
 * Linux support
 
+## Compared with Emulation
+
+What the port takes care of that emulator setups for this game often need fiddling for:
+
+* **No plugins or emulator settings.** One renderer (RT64) is built in: there is nothing to pick, tune or swap
+  when something looks wrong.
+* **Widescreen, 60/120 fps and high resolution are built in**, not emulator-specific hacks.
+* **Saves are just files.** Cartridge (SRAM) saves are written automatically to
+  `%LOCALAPPDATA%\Vpw2Recompiled\saves\` (or next to the exe in portable mode), with a backup copy. No save states or
+  pak images to manage.
+* **Controls set up for this game**, rebindable in the game's own menu, for keyboard and controllers.
+* **ROM hacks without a special setup.** Many hacks run as patch mods on top of your clean ROM, switched on in
+  the Mods menu, instead of needing a particular emulator version, plugin and settings (see
+  [Mods and ROM Hacks](#mods-and-rom-hacks)).
+* **Fan translations without a special setup.** Several community English translations run as patch mods on top
+  of the clean Japanese ROM (see the FAQ).
+
 ## Known Issues
 
 * Rumble and Controller Pak behavior have not been through a full verification
@@ -86,6 +104,7 @@ Planned:
   (see the FAQ).
 * **Ray tracing at Quality or Ultra with 60/120 fps is very demanding** in this game and can slow it down
   on mid-range GPUs. Use Performance or Balanced at 60/120 fps, or 30 fps for Quality/Ultra.
+* The old **HDR Brightness** setting is replaced by **HDR Picture**; it starts on Auto.
 * Ray tracing, frame interpolation, the CRT filter and HDR are experimental. If something looks wrong,
   turn the feature off and please report it with your log file
   (`%LOCALAPPDATA%\Vpw2Recompiled\Vpw2Recompiled.log`).
@@ -144,6 +163,12 @@ same app folder.
 
 Yes — place a file named `portable.txt` in the same folder as the executable and
 saves, config files, and the stored ROM will be kept next to the executable instead.
+
+#### Can I mod the game?
+
+Yes: the **Mods** menu (Settings → Mods) installs, configures and switches `.nrm` mods, and many ROM hacks run as
+patch mods. A free camera (F6), cheats and a Quick Match testing tool come bundled. See
+[Mods and ROM Hacks](#mods-and-rom-hacks).
 
 ## Lighting (Ray Tracing)
 
