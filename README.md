@@ -100,8 +100,8 @@ What the port takes care of that emulator setups for this game often need fiddli
 
 * Rumble and Controller Pak behavior have not been through a full verification
   pass yet.
-* The port runs the original Japanese game; there is no built-in translation
-  (see the FAQ).
+* The port runs the original Japanese game; there is no built-in translation.
+  Community English translations run as patch mods (see the FAQ).
 * **Ray tracing at Quality or Ultra with 60/120 fps is very demanding** in this game and can slow it down
   on mid-range GPUs. Use Performance or Balanced at 60/120 fps, or 30 fps for Quality/Ultra.
 * The old **HDR Brightness** setting is replaced by **HDR Picture**; it starts on Auto.
@@ -144,11 +144,35 @@ Japan, so there is only one cartridge revision. Fan-translation patched ROMs are
 top of the clean ROM: see [Mods and ROM Hacks](#mods-and-rom-hacks).
 **It is not an emulator and it cannot run any arbitrary ROM.**
 
-#### The game is in Japanese — will there be a translation?
+#### The game is in Japanese — can I play it in English?
 
-The port runs the original Japanese game. Community English translations can be
-installed as patch mods made from your own patched ROM: see
-[Mods and ROM Hacks](#mods-and-rom-hacks).
+Yes, with a community English translation installed as a *patch mod*. The port runs the
+original Japanese game and never ships translation patches or ROMs, so you make the mod
+yourself from your own ROM:
+
+1. **Keep your clean ROM** as the game ROM (the SHA1 above). Don't replace it with a
+   patched ROM: the game won't accept it.
+2. **Patch a copy.** Apply the translation's published patch (`.bps`, `.ips`, `.xdelta`,
+   from its authors) to a *copy* of your clean ROM with the patcher its release names.
+   If you already have a patched ROM, use that.
+3. **Make the patch mod** from the patched copy with `make_patch_mod.py`, and install the
+   `.nrm` from the Mods menu: see [ROM hacks as patch mods](#rom-hacks-as-patch-mods).
+
+Only one patch mod can be on at a time; turn it off in the Mods menu to play the original
+again. Each patch mod keeps its own saves.
+
+Which translations work this way:
+
+| Release | As a patch mod |
+|---|---|
+| *Virtual Pro Wrestling 2 - Freem Edition* | Works |
+| *[English Patched]* translation | Works |
+| *English Beta 3 (rey)* translation | Works |
+| *All-Japan Pro Wrestling 64* (Beta 3) | Works |
+| *(English Patch)* release | Doesn't: it rewrites code across functions, so `make_patch_mod.py` refuses it (a mod forced from it stops at start with "Invalid ROM patch"). It needs a full recompile. |
+
+Translations that are unfinished in their own release (untranslated help screens, for
+example) are unfinished here too.
 
 #### Where is the savefile stored?
 
