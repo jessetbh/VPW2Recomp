@@ -116,3 +116,6 @@ wcw_*_log.csv
 
 # Recompiler output for ROM hacks (ROM-derived, never commit)
 RecompiledFuncs.*/
+
+# Installed conversions (AKI_CONVERSION, portable runs)
+/conversions/
