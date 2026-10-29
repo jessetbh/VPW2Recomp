@@ -79,6 +79,41 @@
  "bake_gain": {
   "0": 2.5
  },
+ "width_fit": {
+  "forearm_l": [
+   1.71,
+   1.8
+  ],
+  "forearm_r": [
+   1.68,
+   1.8
+  ],
+  "shin_l": [
+   1.48,
+   1.73
+  ],
+  "shin_r": [
+   1.49,
+   1.73
+  ],
+  "thigh_l": [
+   1.15,
+   1.68
+  ],
+  "thigh_r": [
+   1.0,
+   1.52
+  ],
+  "upperarm_l": [
+   1.32,
+   1.75
+  ],
+  "upperarm_r": [
+   1.32,
+   1.75
+  ]
+ },
+ "head_fit": null,
  "texture_tiles": [
   {
    "index": 0,
@@ -156,6 +191,7 @@
  ],
  "unmapped_bones": [],
  "warnings": [
+  "forearm_l, forearm_r: much thinner than the stock wrestlers', widened 1.8x (the most --width-fit does): check the pack in game",
   "texture 0: the bake keeps 75% of its brightness (lift capped at 2.5)"
  ],
  "relocations": [

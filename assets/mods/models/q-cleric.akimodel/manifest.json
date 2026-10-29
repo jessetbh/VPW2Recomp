@@ -79,6 +79,44 @@
  "bake_gain": {
   "0": 2.5
  },
+ "width_fit": {
+  "forearm_l": [
+   1.14,
+   1.11
+  ],
+  "forearm_r": [
+   1.25,
+   1.2
+  ],
+  "shin_l": [
+   1.8,
+   1.8
+  ],
+  "shin_r": [
+   1.8,
+   1.8
+  ],
+  "thigh_l": [
+   1.8,
+   1.8
+  ],
+  "thigh_r": [
+   1.8,
+   1.8
+  ],
+  "upperarm_l": [
+   1.65,
+   1.8
+  ],
+  "upperarm_r": [
+   1.65,
+   1.8
+  ]
+ },
+ "head_fit": [
+  1.0,
+  0.816
+ ],
  "texture_tiles": [
   {
    "index": 0,
@@ -158,6 +196,7 @@
  "warnings": [
   "--space model: part foot_l moved [3, -57, 0] units onto the game's joint (facing -z, or a very different build?)",
   "--space model: part foot_r moved [-3, -57, 0] units onto the game's joint (facing -z, or a very different build?)",
+  "shin_l, shin_r, thigh_l, thigh_r, upperarm_l, upperarm_r: much thinner than the stock wrestlers', widened 1.8x (the most --width-fit does): check the pack in game",
   "texture 0: the bake keeps 87% of its brightness (lift capped at 2.5)",
   "texture 0 (1024x1024) has more than 16 colours: --quantize would keep more of it as CI4",
   "texture 0 is 1024x1024: used as 32x32 (RGBA16 tiles: power-of-two sides, at most 2048 texels; TMEM is 4 KB)"
