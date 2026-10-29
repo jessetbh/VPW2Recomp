@@ -1,0 +1,30 @@
+{
+  "format": "aki-bundled-history",
+  "version": 1,
+  "previous": {
+    "q-cleric": [
+      "5e62c0df6e482ef5"
+    ],
+    "q-human": [
+      "3175ae7cb5db9524"
+    ],
+    "q-monk": [
+      "16564767754915cc"
+    ],
+    "q-ranger": [
+      "4967edfe9e35aff4"
+    ],
+    "q-robot": [
+      "e807e74e4436dde3"
+    ],
+    "q-rogue": [
+      "a9fbfc817e93cd75"
+    ],
+    "q-warrior": [
+      "7530a988e54ac4ef"
+    ],
+    "q-wizard": [
+      "9eecb1b1dcf1469d"
+    ]
+  }
+}
