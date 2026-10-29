@@ -4,35 +4,43 @@
   "previous": {
     "q-cleric": [
       "5e62c0df6e482ef5",
-      "42401c370857b048"
+      "42401c370857b048",
+      "f84ef54f60132525"
     ],
     "q-human": [
       "3175ae7cb5db9524",
-      "c88716ec475d3f41"
+      "c88716ec475d3f41",
+      "adefc822be747d39"
     ],
     "q-monk": [
       "16564767754915cc",
-      "8c3e2ca2c953fb04"
+      "8c3e2ca2c953fb04",
+      "73070cb971fea90d"
     ],
     "q-ranger": [
       "4967edfe9e35aff4",
-      "d7a68d5cca67fe8e"
+      "d7a68d5cca67fe8e",
+      "a16e8fa2b8079bf2"
     ],
     "q-robot": [
       "e807e74e4436dde3",
-      "922110ec5710fb9f"
+      "922110ec5710fb9f",
+      "5f30e0b043c33a44"
     ],
     "q-rogue": [
       "a9fbfc817e93cd75",
-      "dcbf04733aaf3655"
+      "dcbf04733aaf3655",
+      "cc1d0c59f10d0b7f"
     ],
     "q-warrior": [
       "7530a988e54ac4ef",
-      "0aa59f88ee059d38"
+      "0aa59f88ee059d38",
+      "fb3aa80a4b52e78e"
     ],
     "q-wizard": [
       "9eecb1b1dcf1469d",
-      "2a4470f269b07716"
+      "2a4470f269b07716",
+      "d81859dcbc149386"
     ]
   }
 }
