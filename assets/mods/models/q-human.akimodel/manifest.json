@@ -54,13 +54,13 @@
  "base": "0x80400000",
  "end": "0x80420858",
  "size": 133208,
- "limit": 3932160,
+ "limit": 3701760,
  "offsets": "from model.bin's byte 0 (the AKP1 header is bytes 0-63; base is where byte 0 was laid out)",
  "pointers": "physical (base - 0x80000000) in every G_VTX and G_SETTIMG; relocations lists their offsets",
  "model_height": 5.5353,
- "aki_scale": 31.887601,
- "aki_height": 176.51,
- "final_height": 182,
+ "aki_scale": 29.607753,
+ "aki_height": 163.89,
+ "final_height": 180,
  "ground": {
   "floor": -88.0,
   "lowest": -88,
@@ -76,6 +76,9 @@
  "textures": "tiles",
  "shade": true,
  "bake_light": 1.0,
+ "bake_gain": {
+  "0": 2.5
+ },
  "texture_tiles": [
   {
    "index": 0,
@@ -98,8 +101,8 @@
    {
     "tile": 0,
     "crop": null,
-    "hash": "887078e7eb1f9a71",
-    "png": "887078e7eb1f9a71.png",
+    "hash": "b3bacc6880c7ae80",
+    "png": "b3bacc6880c7ae80.png",
     "tile_size": [
      32,
      32
@@ -152,7 +155,9 @@
   }
  ],
  "unmapped_bones": [],
- "warnings": [],
+ "warnings": [
+  "texture 0: the bake keeps 75% of its brightness (lift capped at 2.5)"
+ ],
  "relocations": [
   64284,
   64372,
