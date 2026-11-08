@@ -659,9 +659,30 @@ static void install_bundled_mods(const std::filesystem::path& app_folder) {
     }
     const fs::path dst_dir = app_folder / "mods";
     fs::create_directories(dst_dir, ec);
-    auto read_all = [](const fs::path& p) {
-        std::ifstream f(p, std::ios::binary);
-        return std::vector<char>(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+    // The installed copy is current when it has the bundled file's size and time (copy_file keeps the time), or
+    // failing that the same bytes; compared in chunks, stopping at the first difference, so the 5 MB starter
+    // packs .rtz isn't read whole twice on every start.
+    auto same_file = [](const fs::path& a, const fs::path& b) {
+        std::error_code e1, e2;
+        const uintmax_t size = fs::file_size(a, e1);
+        if (e1 || (size != fs::file_size(b, e2)) || e2) {
+            return false;
+        }
+        const auto ta = fs::last_write_time(a, e1);
+        const auto tb = fs::last_write_time(b, e2);
+        if (!e1 && !e2 && (ta == tb)) {
+            return true;
+        }
+        std::ifstream fa(a, std::ios::binary), fb(b, std::ios::binary);
+        std::vector<char> ba(1 << 16), bb(1 << 16);
+        while (fa && fb) {
+            fa.read(ba.data(), std::streamsize(ba.size()));
+            fb.read(bb.data(), std::streamsize(bb.size()));
+            if ((fa.gcount() != fb.gcount()) || !std::equal(ba.begin(), ba.begin() + fa.gcount(), bb.begin())) {
+                return false;
+            }
+        }
+        return fa.eof() && fb.eof();
     };
     // Every directory walk steps with an error_code: a filesystem error part way through ends that walk instead of
     // throwing out of startup.
@@ -673,7 +694,7 @@ static void install_bundled_mods(const std::filesystem::path& app_folder) {
         }
         const fs::path dst = dst_dir / entry.path().filename();
         std::error_code copy_ec;
-        if (fs::exists(dst, copy_ec) && read_all(dst) == read_all(entry.path())) {
+        if (fs::exists(dst, copy_ec) && same_file(dst, entry.path())) {
             continue;
         }
         fs::copy_file(entry.path(), dst, fs::copy_options::overwrite_existing, copy_ec);
@@ -787,9 +808,20 @@ static void mod_set_keyboard_suppressed(uint8_t* rdram, recomp_context* ctx) {
 // "models.txt" (the player's assignments) or "<pack>.akimodel/<file>" (one folder level, the folder must end in
 // .akimodel). No absolute paths, drive letters, backslashes or "..".
 //   aki_log(str, len)                  -> prints "[mod] <str>" to stderr
-//   aki_models_read(path, dest, max)   -> bytes copied into RDRAM at dest; -1 missing, -2 bigger than max, -3 bad path
+//   aki_models_read(path, dest, max)   -> bytes copied into RDRAM at dest; -1 missing, -2 bigger than max, -3 bad path,
+//                                         -4 dest..dest+size not inside RDRAM
 //   aki_models_list(index, out, max)   -> the index-th pack id (folder name without .akimodel, sorted) NUL-terminated
 //                                         into out, its length; -1 past the end, -2 longer than max - 1
+
+// True when [addr, addr + size) lies in KSEG0 RDRAM (8 MB, Expansion Pak): a mod's pointer must not make the host
+// write outside the game's memory.
+static bool mod_rdram_range_ok(gpr addr, uint64_t size) {
+    constexpr uint64_t kseg0 = 0xFFFFFFFF80000000ULL;
+    constexpr uint64_t rdram_size = 0x800000;
+    const uint64_t a = uint64_t(addr);
+    return (a >= kseg0) && (a - kseg0 <= rdram_size) && (size <= rdram_size - (a - kseg0));
+}
+
 static std::string mod_read_string(uint8_t* rdram, gpr ptr, uint32_t limit) {
     std::string out;
     for (uint32_t i = 0; i < limit; i++) {
@@ -874,6 +906,13 @@ static void aki_models_read(uint8_t* rdram, recomp_context* ctx) {
         return;
     }
 
+    if (!mod_rdram_range_ok(dest, size)) {
+        fprintf(stderr, "[mod] aki_models_read %s: destination 0x%08X + %llu bytes is outside RDRAM\n", path.c_str(),
+            uint32_t(dest), (unsigned long long)size);
+        _return(ctx, int32_t(-4));
+        return;
+    }
+
     std::ifstream file(file_path, std::ios::binary);
     std::vector<char> bytes((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     if (bytes.size() != size) {
@@ -922,6 +961,11 @@ static void aki_models_list(uint8_t* rdram, recomp_context* ctx) {
 
     const std::string& name = packs[index];
     if ((max == 0) || (name.size() > max - 1)) {
+        _return(ctx, int32_t(-2));
+        return;
+    }
+
+    if (!mod_rdram_range_ok(out, name.size() + 1)) {
         _return(ctx, int32_t(-2));
         return;
     }
@@ -995,7 +1039,13 @@ static void mod_conversion_codes(uint8_t* rdram, recomp_context* ctx) {
     }
     const std::string& s = conversion_codes_text;
     const size_t alloc_size = (s.size() + 1 + 15) & ~size_t(15);
-    const gpr offset = reinterpret_cast<uint8_t*>(recomp::alloc(rdram, alloc_size)) - rdram;
+    void* mem = recomp::alloc(rdram, alloc_size);
+    if (mem == nullptr) {
+        fprintf(stderr, "[conversion] recomp heap has no room for the codes (%zu bytes); codes off\n", alloc_size);
+        ctx->r2 = 0;
+        return;
+    }
+    const gpr offset = reinterpret_cast<uint8_t*>(mem) - rdram;
     const gpr addr = offset + 0xFFFFFFFF80000000ULL;
     for (size_t i = 0; i < s.size(); i++) {
         MEM_B(i, addr) = s[i];
