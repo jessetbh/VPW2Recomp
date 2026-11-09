@@ -188,15 +188,29 @@ def main():
                          '      wcw_rt_latch_camera_multiply(rdram, (uint32_t)ctx->r4, (uint32_t)ctx->r5, (uint32_t)ctx->r6); }\n'], 'rt-latch'):
             save_lines('funcs_0.c', lines)
             applied.append('rt camera latch (func_80002108)')
+    # The camera emit sits at the return of func_80002E40 (it builds the frame's display-list head),
+    # not after its call in the graphics loop func_800033D4: ROM hacks change func_800033D4 (VPW64
+    # Deluxe), and a function a hack changes is recompiled from the patch without hand-edits, so RT64
+    # never got a camera there and ray tracing silently did nothing (aki-roadmap#259). func_80002E40 has
+    # one caller and one return. Older generated files had it in func_800033D4: strip that site.
     lines = load_lines('funcs_1.c')
-    if not any('[vpw2][rt]' in l for l in lines):
-        rng = body_range(lines, 'func_800033D4')
-        if insert_after(lines, rng, '    func_80002E40(rdram, ctx);',
-                        ['    { /* [vpw2][rt] after the frame DL head is returned in v0 */\n',
-                         '      extern uint32_t wcw_rt_emit_camera(uint8_t* rdram, uint32_t gfx);\n',
-                         '      ctx->r2 = (int64_t)(int32_t)wcw_rt_emit_camera(rdram, (uint32_t)ctx->r2); }\n'], 'rt-emit'):
+    old = next((i for i, l in enumerate(lines) if '[vpw2][rt] after the frame DL head is returned in v0' in l), None)
+    if old is not None:
+        del lines[old:old + 3]
+        save_lines('funcs_1.c', lines)
+        applied.append('removed old rt camera emit (func_800033D4)')
+    if not any('[vpw2][rt] camera emit' in l for l in lines):
+        lo, hi = body_range(lines, 'func_80002E40')
+        hits = [i for i in range(lo, hi) if lines[i].rstrip('\r\n') == '    return;'] if lo is not None else []
+        if len(hits) != 1:
+            failures.append('rt-emit: func_80002E40 has %d returns, expected 1' % len(hits))
+        else:
+            lines[hits[0]:hits[0]] = [
+                '    { /* [vpw2][rt] camera emit: v0 = the frame DL head func_800033D4 continues from */\n',
+                '      extern uint32_t wcw_rt_emit_camera(uint8_t* rdram, uint32_t gfx);\n',
+                '      ctx->r2 = (int64_t)(int32_t)wcw_rt_emit_camera(rdram, (uint32_t)ctx->r2); }\n']
             save_lines('funcs_1.c', lines)
-            applied.append('rt camera emit (func_800033D4)')
+            applied.append('rt camera emit (func_80002E40 return)')
     applied.append(hfr_hand_edits())
     applied.append(widescreen_cull_edit())
     print('readd_hand_edits: ' + ('; '.join(applied) if applied else 'nothing registered (bootstrap state)'))
