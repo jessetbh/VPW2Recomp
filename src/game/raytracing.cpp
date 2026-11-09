@@ -15,8 +15,9 @@
 //    multiply that func_80001768(cam, P, V) calls; mods hook func_80001768 itself), the camera latch every
 //    camera setup goes through (guPerspectiveF = func_80031910, guLookAtF = func_80030F80),
 //    copies the P and V float matrices.
-//  - wcw_rt_emit_camera: right after func_80002E40 returns the frame's display-list head
-//    (in func_800033D4, the graphics loop), writes
+//  - wcw_rt_emit_camera: at the return of func_80002E40, which builds the frame's display-list
+//    head for func_800033D4, the graphics loop (not in the loop itself: ROM hacks change it and lose
+//    hand-edits there, aki-roadmap#259), writes
 //      gEXEnable                (RT64 hook on F3DEX2 G_SPNOOP 0xE0; RT64 resets it per DL)
 //      gEXSetViewMatrixFloat / gEXSetProjMatrixFloat (inline copies of V and P)
 //      gSPBranchList            (past the inline matrices, which share the DL's lifetime)

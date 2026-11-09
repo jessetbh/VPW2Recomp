@@ -37,6 +37,9 @@
 #include "librecomp/rsp.hpp"
 #include "librecomp/helpers.hpp"
 #include "librecomp/overlays.hpp"
+#include "librecomp/conversion.hpp"
+#include "librecomp/bundled_packs.hpp"
+#include "librecomp/addresses.hpp" // recomp::alloc (conversion codes export)
 #include "ovl_patches.hpp"
 #include "icon_bytes.h"
 #include "logo_bytes.h"
@@ -179,7 +182,7 @@ static void wcw_sample_all_threads() {
 
 extern "C" void recomp_entrypoint(uint8_t* rdram, recomp_context* ctx);
 
-static const recomp::Version version { 0, 2, 0, "" };
+static const recomp::Version version { 0, 3, 0, "" };
 
 template <typename... Ts>
 [[noreturn]] static void exit_error(const char* str, Ts... args) {
@@ -229,21 +232,120 @@ ultramodern::renderer::WindowHandle create_window(ultramodern::gfx_callbacks_t::
 // button (pad 1: A/South, pad 2: B/East, pad 3: X/West, pad 4: Y/North) every 2 seconds.
 // Combined with WCW_INPUT_LOG=1 (librecomp si.cpp) this verifies per-player input
 // separation end to end without physical controllers.
+//
+// WCW_VPADS_SCRIPT=<file> replaces the pulses with scripted presses, for reproducible multi-player
+// runs (e.g. two players into a match). One press per line: `<seconds> <pad 1-4> <button> [hold ms]`,
+// seconds counted from the first frame; buttons are SDL game controller names (a, b, x, y, start,
+// back, dpup, dpdown, dpleft, dpright, leftshoulder, rightshoulder, ...); `#` starts a comment.
+// A line `<seconds> repeat <period seconds>` loops the presses after <seconds> from there on.
+// Hot-plug: `<seconds> plug <pad>` / `<seconds> unplug <pad>` attach / detach a pad then (a pad
+// whose first such line is a plug starts unplugged), like a player connecting or pulling a controller mid-session.
+struct VpadPress { double at; int pad; SDL_GameControllerButton button; uint32_t hold_ms; };
+struct VpadPlug { double at; int pad; bool plug; };
+static std::vector<VpadPlug> g_vpad_plugs;
+
+static std::vector<VpadPress> load_vpad_script(const char* path, double& repeat_from, double& repeat_period) {
+    std::vector<VpadPress> presses;
+    repeat_from = -1.0;
+    repeat_period = 0.0;
+    std::ifstream file(path);
+    std::string line;
+    while (std::getline(file, line)) {
+        const size_t hash = line.find('#');
+        if (hash != std::string::npos) line.resize(hash);
+        char word[64] = {};
+        double at = 0.0, period = 0.0;
+        int pad = 0;
+        unsigned hold = 150;
+        if (sscanf(line.c_str(), "%lf repeat %lf", &at, &period) == 2) {
+            repeat_from = at;
+            repeat_period = period;
+            continue;
+        }
+        char verb[16] = {};
+        if ((sscanf(line.c_str(), "%lf %15s %d", &at, verb, &pad) == 3) && (!strcmp(verb, "plug") || !strcmp(verb, "unplug"))) {
+            if ((pad >= 1) && (pad <= 4)) g_vpad_plugs.push_back({ at, pad - 1, verb[0] == 'p' });
+            continue;
+        }
+        const int fields = sscanf(line.c_str(), "%lf %d %63s %u", &at, &pad, word, &hold);
+        if (fields < 3) continue;
+        const SDL_GameControllerButton button = SDL_GameControllerGetButtonFromString(word);
+        if ((pad < 1) || (pad > 4) || (button == SDL_CONTROLLER_BUTTON_INVALID)) {
+            fprintf(stderr, "[wcw] vpad script: bad line '%s'\n", line.c_str());
+            continue;
+        }
+        presses.push_back({ at, pad - 1, button, hold });
+    }
+    fprintf(stderr, "[wcw] vpad script %s: %zu presses, repeat from %.1f every %.1f s\n", path, presses.size(), repeat_from, repeat_period);
+    return presses;
+}
+
 static void update_virtual_pads() {
     static int vpad_count = -1;
     static SDL_Joystick* vpads[4] = {};
+    static std::vector<VpadPress> script;
+    static bool scripted = false;
+    static double repeat_from = -1.0, repeat_period = 0.0;
+    static uint32_t start_ticks = 0;
+    static size_t next_plug = 0;
+    auto attach = [](int i) {
+        int dev = SDL_JoystickAttachVirtual(SDL_JOYSTICK_TYPE_GAMECONTROLLER,
+                                            SDL_CONTROLLER_AXIS_MAX, SDL_CONTROLLER_BUTTON_MAX, 0);
+        if (dev >= 0) vpads[i] = SDL_JoystickOpen(dev);
+        fprintf(stderr, "[wcw] virtual pad %d attached (dev=%d joy=%p)\n", i + 1, dev, (void*)vpads[i]);
+    };
     if (vpad_count < 0) {
         const char* env = getenv("WCW_VPADS");
         vpad_count = env ? std::clamp(atoi(env), 0, 4) : 0;
-        for (int i = 0; i < vpad_count; i++) {
-            int dev = SDL_JoystickAttachVirtual(SDL_JOYSTICK_TYPE_GAMECONTROLLER,
-                                                SDL_CONTROLLER_AXIS_MAX, SDL_CONTROLLER_BUTTON_MAX, 0);
-            if (dev >= 0) vpads[i] = SDL_JoystickOpen(dev);
-            fprintf(stderr, "[wcw] virtual pad %d attached (dev=%d joy=%p)\n", i + 1, dev, (void*)vpads[i]);
+        if (const char* path = getenv("WCW_VPADS_SCRIPT")) {
+            script = load_vpad_script(path, repeat_from, repeat_period);
+            std::stable_sort(g_vpad_plugs.begin(), g_vpad_plugs.end(), [](const VpadPlug& a, const VpadPlug& b) { return a.at < b.at; });
+            scripted = true;
         }
+        for (int i = 0; i < vpad_count; i++) {
+            // A pad whose first hot-plug event is a plug starts unplugged.
+            const auto first = std::find_if(g_vpad_plugs.begin(), g_vpad_plugs.end(), [i](const VpadPlug& p) { return p.pad == i; });
+            if ((first == g_vpad_plugs.end()) || !first->plug) attach(i);
+        }
+        start_ticks = SDL_GetTicks();
     }
     if (vpad_count == 0) return;
     uint32_t t = SDL_GetTicks();
+    if (scripted) {
+        double now = (t - start_ticks) / 1000.0;
+        while ((next_plug < g_vpad_plugs.size()) && (now >= g_vpad_plugs[next_plug].at)) {
+            const VpadPlug& p = g_vpad_plugs[next_plug++];
+            if (p.pad >= vpad_count) continue;
+            if (p.plug && (vpads[p.pad] == nullptr)) {
+                attach(p.pad);
+            }
+            else if (!p.plug && (vpads[p.pad] != nullptr)) {
+                const SDL_JoystickID id = SDL_JoystickInstanceID(vpads[p.pad]);
+                int device = -1;
+                for (int d = 0; d < SDL_NumJoysticks(); d++) {
+                    if (SDL_JoystickGetDeviceInstanceID(d) == id) device = d;
+                }
+                SDL_JoystickClose(vpads[p.pad]);
+                vpads[p.pad] = nullptr;
+                if (device >= 0) SDL_JoystickDetachVirtual(device);
+                fprintf(stderr, "[wcw] virtual pad %d detached (dev=%d)\n", p.pad + 1, device);
+            }
+        }
+        if ((repeat_from >= 0.0) && (repeat_period > 0.0) && (now >= repeat_from + repeat_period)) {
+            now = repeat_from + std::fmod(now - repeat_from, repeat_period);
+        }
+        bool down[4][SDL_CONTROLLER_BUTTON_MAX] = {};
+        for (const VpadPress& p : script) {
+            if ((now >= p.at) && (now < p.at + p.hold_ms / 1000.0)) down[p.pad][p.button] = true;
+        }
+        for (int i = 0; i < vpad_count; i++) {
+            if (vpads[i] == nullptr) continue;
+            for (int b = 0; b < SDL_CONTROLLER_BUTTON_MAX; b++) {
+                SDL_JoystickSetVirtualButton(vpads[i], b, down[i][b] ? SDL_PRESSED : SDL_RELEASED);
+            }
+        }
+        return;
+    }
     for (int i = 0; i < vpad_count; i++) {
         if (vpads[i] == nullptr) continue;
         // 2 s period, 500 ms press, staggered 250 ms per pad.
@@ -557,22 +659,52 @@ static void install_bundled_mods(const std::filesystem::path& app_folder) {
     }
     const fs::path dst_dir = app_folder / "mods";
     fs::create_directories(dst_dir, ec);
-    auto read_all = [](const fs::path& p) {
-        std::ifstream f(p, std::ios::binary);
-        return std::vector<char>(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+    // The installed copy is current when it has the bundled file's size and time (copy_file keeps the time), or
+    // failing that the same bytes; compared in chunks, stopping at the first difference, so the 5 MB starter
+    // packs .rtz isn't read whole twice on every start.
+    auto same_file = [](const fs::path& a, const fs::path& b) {
+        std::error_code e1, e2;
+        const uintmax_t size = fs::file_size(a, e1);
+        if (e1 || (size != fs::file_size(b, e2)) || e2) {
+            return false;
+        }
+        const auto ta = fs::last_write_time(a, e1);
+        const auto tb = fs::last_write_time(b, e2);
+        if (!e1 && !e2 && (ta == tb)) {
+            return true;
+        }
+        std::ifstream fa(a, std::ios::binary), fb(b, std::ios::binary);
+        std::vector<char> ba(1 << 16), bb(1 << 16);
+        while (fa && fb) {
+            fa.read(ba.data(), std::streamsize(ba.size()));
+            fb.read(bb.data(), std::streamsize(bb.size()));
+            if ((fa.gcount() != fb.gcount()) || !std::equal(ba.begin(), ba.begin() + fa.gcount(), bb.begin())) {
+                return false;
+            }
+        }
+        return fa.eof() && fb.eof();
     };
-    for (const auto& entry : fs::directory_iterator(src_dir, ec)) {
-        if (entry.path().extension() != ".nrm") {
+    // Every directory walk steps with an error_code: a filesystem error part way through ends that walk instead of
+    // throwing out of startup.
+    for (fs::directory_iterator it(src_dir, ec), end; !ec && it != end; it.increment(ec)) {
+        const fs::directory_entry& entry = *it;
+        // Mods and texture packs (the model import starter packs' HD textures are an .rtz, aki-roadmap#145).
+        if (entry.path().extension() != ".nrm" && entry.path().extension() != ".rtz") {
             continue;
         }
         const fs::path dst = dst_dir / entry.path().filename();
-        if (fs::exists(dst, ec) && read_all(dst) == read_all(entry.path())) {
+        std::error_code copy_ec;
+        if (fs::exists(dst, copy_ec) && same_file(dst, entry.path())) {
             continue;
         }
-        fs::copy_file(entry.path(), dst, fs::copy_options::overwrite_existing, ec);
+        fs::copy_file(entry.path(), dst, fs::copy_options::overwrite_existing, copy_ec);
         fprintf(stderr, "[wcw] bundled mod %s: %s\n", entry.path().filename().string().c_str(),
-            ec ? ec.message().c_str() : "installed");
+            copy_ec ? copy_ec.message().c_str() : "installed");
     }
+
+    // [wcw] The aki_modelimport starter packs (aki-roadmap#145, #149): installed once into mods/models, a newer bundled
+    // version replaces an older copy the player hasn't edited; the rules are librecomp's (bundled_packs.hpp).
+    recomp::mods::bundled_packs::install(src_dir / "models", dst_dir / "models");
 }
 
 // Right-stick access for mods (AkiMods camera). The N64 has no right stick; by default it
@@ -672,7 +804,213 @@ static void mod_set_keyboard_suppressed(uint8_t* rdram, recomp_context* ctx) {
     recompinput::set_keyboard_suppressed(_arg<0, uint32_t>(rdram, ctx) != 0);
 }
 
+// [aki] Model packs (aki-roadmap#130, the aki_modelimport mod). Everything is read from <mods folder>/models/ only:
+// "models.txt" (the player's assignments) or "<pack>.akimodel/<file>" (one folder level, the folder must end in
+// .akimodel). No absolute paths, drive letters, backslashes or "..".
+//   aki_log(str, len)                  -> prints "[mod] <str>" to stderr
+//   aki_models_read(path, dest, max)   -> bytes copied into RDRAM at dest; -1 missing, -2 bigger than max, -3 bad path,
+//                                         -4 dest..dest+size not inside RDRAM
+//   aki_models_list(index, out, max)   -> the index-th pack id (folder name without .akimodel, sorted) NUL-terminated
+//                                         into out, its length; -1 past the end, -2 longer than max - 1
+
+// True when [addr, addr + size) lies in KSEG0 RDRAM (8 MB, Expansion Pak): a mod's pointer must not make the host
+// write outside the game's memory.
+static bool mod_rdram_range_ok(gpr addr, uint64_t size) {
+    constexpr uint64_t kseg0 = 0xFFFFFFFF80000000ULL;
+    constexpr uint64_t rdram_size = 0x800000;
+    const uint64_t a = uint64_t(addr);
+    return (a >= kseg0) && (a - kseg0 <= rdram_size) && (size <= rdram_size - (a - kseg0));
+}
+
+static std::string mod_read_string(uint8_t* rdram, gpr ptr, uint32_t limit) {
+    std::string out;
+    for (uint32_t i = 0; i < limit; i++) {
+        const char c = char(MEM_B(i, ptr));
+        if (c == '\0') {
+            break;
+        }
+
+        out.push_back(c);
+    }
+
+    return out;
+}
+
+// aki-roadmap#226: while a conversion with a models component runs, its own models folder instead (models.txt and packs
+// included); empty when its models were refused (librecomp conversion::models_refusal), and then nothing is read.
+static std::filesystem::path models_directory() {
+    if (const recomp::mods::conversion::Conversion* conversion = recomp::mods::active_conversion(); conversion && conversion->has_models) {
+        return recomp::mods::active_conversion_models_dir();
+    }
+    return recomp::mods::get_mods_directory() / "models";
+}
+
+static bool models_path_ok(const std::string& path) {
+    if (path.empty() || (path.size() > 200) || (path.find_first_of("\\:") != std::string::npos) ||
+        (path.find("..") != std::string::npos) || (path.front() == '/')) {
+        return false;
+    }
+
+    // Printable ASCII only: no codepage conversions (they throw on Windows), no control characters.
+    for (const char c : path) {
+        if ((c < 0x20) || (c > 0x7E)) {
+            return false;
+        }
+    }
+
+    const size_t slash = path.find('/');
+    if (slash == std::string::npos) {
+        return true;
+    }
+
+    const std::string folder = path.substr(0, slash);
+    const std::string file = path.substr(slash + 1);
+    const std::string ext = ".akimodel";
+    return (folder.size() > ext.size()) && (folder.compare(folder.size() - ext.size(), ext.size(), ext) == 0) &&
+        !file.empty() && (file.find('/') == std::string::npos);
+}
+
+static void aki_log(uint8_t* rdram, recomp_context* ctx) {
+    const gpr str = gpr(int32_t(_arg<0, uint32_t>(rdram, ctx)));
+    const uint32_t length = _arg<1, uint32_t>(rdram, ctx);
+    std::string text;
+    for (uint32_t i = 0; (i < length) && (i < 4096); i++) {
+        text.push_back(char(MEM_B(i, str)));
+    }
+
+    fprintf(stderr, "[mod] %s\n", text.c_str());
+}
+
+static void aki_models_read(uint8_t* rdram, recomp_context* ctx) {
+    const std::string path = mod_read_string(rdram, gpr(int32_t(_arg<0, uint32_t>(rdram, ctx))), 256);
+    const gpr dest = gpr(int32_t(_arg<1, uint32_t>(rdram, ctx)));
+    const uint32_t max = _arg<2, uint32_t>(rdram, ctx);
+    if (!models_path_ok(path)) {
+        _return(ctx, int32_t(-3));
+        return;
+    }
+
+    // aki-roadmap#226: a conversion's aki.json slots, served as its models.txt.
+    std::string slots_text;
+    if ((path == "models.txt") && recomp::mods::active_conversion_models_txt(slots_text)) {
+        if (slots_text.size() > max) {
+            _return(ctx, int32_t(-2));
+            return;
+        }
+        for (size_t i = 0; i < slots_text.size(); i++) {
+            MEM_B(i, dest) = int8_t(slots_text[i]);
+        }
+        _return(ctx, int32_t(slots_text.size()));
+        return;
+    }
+
+    std::error_code ec;
+    std::filesystem::path file_path;
+    const std::filesystem::path directory = models_directory();
+    if (directory.empty()) {
+        _return(ctx, int32_t(-1));
+        return;
+    }
+    try {
+        file_path = directory / std::filesystem::u8path(path);
+    } catch (...) {
+        _return(ctx, int32_t(-3));
+        return;
+    }
+
+    const uintmax_t size = std::filesystem::file_size(file_path, ec);
+    if (ec || !std::filesystem::is_regular_file(file_path, ec)) {
+        _return(ctx, int32_t(-1));
+        return;
+    }
+
+    if (size > max) {
+        fprintf(stderr, "[mod] aki_models_read %s: %llu bytes, more than %u\n", path.c_str(), (unsigned long long)size, max);
+        _return(ctx, int32_t(-2));
+        return;
+    }
+
+    if (!mod_rdram_range_ok(dest, size)) {
+        fprintf(stderr, "[mod] aki_models_read %s: destination 0x%08X + %llu bytes is outside RDRAM\n", path.c_str(),
+            uint32_t(dest), (unsigned long long)size);
+        _return(ctx, int32_t(-4));
+        return;
+    }
+
+    std::ifstream file(file_path, std::ios::binary);
+    std::vector<char> bytes((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    if (bytes.size() != size) {
+        _return(ctx, int32_t(-1));
+        return;
+    }
+
+    for (size_t i = 0; i < bytes.size(); i++) {
+        MEM_B(i, dest) = int8_t(bytes[i]);
+    }
+
+    _return(ctx, int32_t(bytes.size()));
+}
+
+static void aki_models_list(uint8_t* rdram, recomp_context* ctx) {
+    const uint32_t index = _arg<0, uint32_t>(rdram, ctx);
+    const gpr out = gpr(int32_t(_arg<1, uint32_t>(rdram, ctx)));
+    const uint32_t max = _arg<2, uint32_t>(rdram, ctx);
+    std::vector<std::string> packs;
+    const std::filesystem::path directory = models_directory();
+    if (directory.empty()) {
+        _return(ctx, int32_t(-1));
+        return;
+    }
+    try {
+        std::error_code ec;
+        for (const auto& entry : std::filesystem::directory_iterator(directory, ec)) {
+            // Names outside ASCII can't be pack ids: skip them without converting (that throws on Windows).
+            const std::wstring wide = entry.path().filename().wstring();
+            if (std::any_of(wide.begin(), wide.end(), [](wchar_t c) { return (c < 0x20) || (c > 0x7E); })) {
+                continue;
+            }
+
+            const std::string name(wide.begin(), wide.end());
+            const std::string ext = ".akimodel";
+            std::error_code dir_ec;
+            if (entry.is_directory(dir_ec) && (name.size() > ext.size()) && (name.compare(name.size() - ext.size(), ext.size(), ext) == 0)) {
+                packs.push_back(name.substr(0, name.size() - ext.size()));
+            }
+        }
+    } catch (...) {
+        _return(ctx, int32_t(-1));
+        return;
+    }
+
+    std::sort(packs.begin(), packs.end());
+    if (index >= packs.size()) {
+        _return(ctx, int32_t(-1));
+        return;
+    }
+
+    const std::string& name = packs[index];
+    if ((max == 0) || (name.size() > max - 1)) {
+        _return(ctx, int32_t(-2));
+        return;
+    }
+
+    if (!mod_rdram_range_ok(out, name.size() + 1)) {
+        _return(ctx, int32_t(-2));
+        return;
+    }
+
+    for (size_t i = 0; i < name.size(); i++) {
+        MEM_B(i, out) = int8_t(name[i]);
+    }
+
+    MEM_B(name.size(), out) = 0;
+    _return(ctx, int32_t(name.size()));
+}
+
 static void register_mod_input_exports() {
+    recomp::overlays::register_base_export("aki_log", aki_log);
+    recomp::overlays::register_base_export("aki_models_read", aki_models_read);
+    recomp::overlays::register_base_export("aki_models_list", aki_models_list);
     recomp::overlays::register_base_export("recomp_get_key_down", mod_get_key_down);
     recomp::overlays::register_base_export("recomp_take_mouse_motion", mod_take_mouse_motion);
     recomp::overlays::register_base_export("recomp_get_mouse_dx", mod_get_mouse_dx);
@@ -685,6 +1023,82 @@ static void register_mod_input_exports() {
     recomp::overlays::register_base_export("recomp_set_right_analog_suppressed", mod_set_right_analog_suppressed);
     recomp::overlays::register_base_export("recomp_get_right_stick_click", mod_get_right_stick_click);
     recomp::overlays::register_base_export("recomp_set_movement_rotation", mod_set_movement_rotation);
+}
+
+// [wcw fullconv] Conversion codes. AKI_CONVERSION=<id> (set by AKI Launcher) names an installed conversion,
+// <app folder>/conversions/<id>/aki.json. The runtime's loader (librecomp conversion.cpp) owns that manifest: the id
+// rules and the codes file path. When the conversion has a codes component, its text goes to the AkiMods cheats engine
+// (aki_cheats, built with AKI_HOST_CONVERSION), which applies it every frame. Grammar and contract: AkiMods
+// mods/cheats/README.md, "Codes files". Without AKI_CONVERSION, or without codes, aki_conversion_codes returns NULL.
+static std::string conversion_codes_text;
+static bool conversion_has_codes = false;
+
+// Fetched the first time the cheats mod asks (after the mod scan has loaded the conversion).
+static void fetch_conversion_codes() {
+    static bool fetched = false;
+    if (fetched) {
+        return;
+    }
+    fetched = true;
+    if (recomp::mods::active_native_codes_ready()) {
+        return; // the runtime runs these itself, every frame (aki_conversion_apply)
+    }
+    std::string text = recomp::mods::active_conversion_codes();
+    if (text.empty()) {
+        return;
+    }
+    constexpr size_t max_codes_bytes = 1024 * 1024;
+    if (text.size() > max_codes_bytes) {
+        fprintf(stderr, "[conversion] codes file is over 1 MB; ignored\n");
+        return;
+    }
+    text.erase(std::remove(text.begin(), text.end(), '\0'), text.end()); // the mod reads a C string
+    conversion_codes_text = std::move(text);
+    conversion_has_codes = true;
+    fprintf(stderr, "[conversion] codes (%zu bytes) handed to the cheats engine\n", conversion_codes_text.size());
+}
+
+// char* aki_conversion_codes(void): the codes text as a NUL-terminated string in the recomp heap (the mod frees it
+// with recomp_free), or NULL.
+static void mod_conversion_codes(uint8_t* rdram, recomp_context* ctx) {
+    fetch_conversion_codes();
+    if (!conversion_has_codes) {
+        ctx->r2 = 0;
+        return;
+    }
+    const std::string& s = conversion_codes_text;
+    const size_t alloc_size = (s.size() + 1 + 15) & ~size_t(15);
+    void* mem = recomp::alloc(rdram, alloc_size);
+    if (mem == nullptr) {
+        fprintf(stderr, "[conversion] recomp heap has no room for the codes (%zu bytes); codes off\n", alloc_size);
+        ctx->r2 = 0;
+        return;
+    }
+    const gpr offset = reinterpret_cast<uint8_t*>(mem) - rdram;
+    const gpr addr = offset + 0xFFFFFFFF80000000ULL;
+    for (size_t i = 0; i < s.size(); i++) {
+        MEM_B(i, addr) = s[i];
+    }
+    MEM_B(s.size(), addr) = 0;
+    ctx->r2 = addr;
+}
+
+// void aki_conversion_apply(void): runs the conversion's native codes table once (librecomp conversion_codes.hpp:
+// codes written for this port's revision, any number of them). The cheats mod calls it from its frame hook.
+static void mod_conversion_apply(uint8_t* rdram, recomp_context* ctx) {
+    constexpr uint32_t rdram_size = 0x800000; // 8 MB (Expansion Pak), the cheats engine's range
+    recomp::mods::apply_active_native_codes(rdram, rdram_size);
+}
+
+// void aki_conversion_log(const char* msg): one line in the game's log.
+static void mod_conversion_log(uint8_t* rdram, recomp_context* ctx) {
+    fprintf(stderr, "[conversion] %s\n", _arg_string<0>(rdram, ctx).c_str());
+}
+
+static void register_conversion_exports() {
+    recomp::overlays::register_base_export("aki_conversion_codes", mod_conversion_codes);
+    recomp::overlays::register_base_export("aki_conversion_log", mod_conversion_log);
+    recomp::overlays::register_base_export("aki_conversion_apply", mod_conversion_apply);
 }
 
 // [wcw] Texture packs (aki-roadmap#48). A pack is a folder or an .rtz (a zip) with rt64.json at its root, in the mods
@@ -875,8 +1289,11 @@ int main(int argc, char** argv) {
     std::filesystem::create_directories(app_folder, app_folder_ec);
     recomp::register_config_path(app_folder);
     install_bundled_mods(app_folder);
+    // [wcw fullconv] Codes in a conversion (AKI_CONVERSION) only run when written for this ROM revision.
+    recomp::mods::set_port_rom_revision("vpw2-rev0");
     register_texture_packs(app_folder, dump_textures);
     register_mod_input_exports();
+    register_conversion_exports();
     wcw::register_wcw_overlays();
     // wcw::register_wcw_patches();  // bootstrap: no patches pipeline yet (see CMakeLists)
 
